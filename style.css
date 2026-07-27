@@ -1,0 +1,59 @@
+/* Reset the default spacing */
+body{
+    margin:0;
+    font-family:Arial, sans-serif;
+    background:#f5f5f5;
+}
+
+/* Main container */
+.container{
+    width:80%;
+    margin:auto;              /* Centers the container */
+    display:grid;             /* Makes it a grid container */
+    grid-template-columns:1fr;/* One column layout */
+    gap:20px;                 /* Space between grid items */
+    justify-items:center;     /* Center items horizontally */
+    padding:40px;             /* Space inside the container */
+}
+
+/* Heading */
+h1{
+    color:#333;
+}
+
+/* Input field */
+input{
+    width:80%;
+    padding:12px;
+    font-size:16px;
+    border:1px solid #ccc;
+    border-radius:8px;
+    outline:none;
+}
+
+/* Button */
+button{
+    padding:12px 25px;
+    background:#4CAF50;
+    color:white;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:16px;
+}
+
+/* Button hover effect */
+button:hover{
+    background:#45a049;
+}
+
+/* AI Response Box */
+.response{
+    width:80%;
+    min-height:150px;
+    background:white;
+    border:1px solid #ddd;
+    border-radius:10px;
+    padding:20px;
+    box-sizing:border-box;
+}
