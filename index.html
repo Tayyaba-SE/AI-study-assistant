@@ -3,27 +3,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Study Assitant</title>
-    <link rel="stylesheet"href="style.css">
+    <title>AI Study Assistant</title>
+    <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
-    <div class="container">
 
+<div class="container">
+
+    <header class="header">
         <h1>AI Study Assistant</h1>
+        <button class="profile-btn">Profile</button>
+    </header>
 
+    <aside class="sidebar">
+        <h2>Menu</h2>
 
-        <button>Ask AI </button>
+        <button>Dashboard</button>
+        <button>History</button>
+        <button>Saved Notes</button>
+        <button>Settings</button>
+    </aside>
 
-        
+    <main class="main">
+
         <input
-        type="text"
-        placeholder="Ask your question..."
+            type="text"
+            placeholder="Ask your question..."
         >
 
+        <button class="ask-btn">
+            Ask AI
+        </button>
+
         <div class="response">
-        AI response will appear here...
+
+            AI response will appear here...
+
         </div>
 
-    </div>
+    </main>
+
+</div>
+
 </body>
 </html>
