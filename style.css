@@ -40,9 +40,10 @@ body {
 
     padding: 20px 30px;
 
-    background: #d8c7ff;
+    background:#809AAF;
+    
+    color:white;
 
-    color: #3b3450;
 
 }
 
@@ -50,8 +51,8 @@ body {
 
     padding: 25px;
 
-    background-color: #eee6ff;
-
+    background:#6D8BA3;
+   
     color: #3b3450;
 
     display: flex;
@@ -62,19 +63,18 @@ body {
 
 }
 .sidebar button{
-    padding:12px;
+    background:transparent;
+    color:white;
     border:none;
+    padding:12px;
     border-radius:8px;
-    background:#f0f0f0;
-    cursor:pointer;
     text-align:left;
-    font-size:16px;
+    cursor:pointer;
     transition:0.3s;
 }
 
 .sidebar button:hover{
-    background:#4CAF50;
-    color:white;
+    background:#809AAF;
 }
 
 .main {
@@ -108,7 +108,7 @@ input:focus{
 .ask-btn{
     width:180px;
     padding:15px;
-    background:#4CAF50;
+    background:#809AAF;
     color:white;
     border:none;
     border-radius:10px;
@@ -118,12 +118,13 @@ input:focus{
 }
 
 .ask-btn:hover{
-    background:#388E3C;
+    background:#6D8BA3;
+
 }
 
 .response{
     background:white;
-    border:1px solid #ddd;
+    border:1px solid #d9d9d9;
     border-radius:10px;
     padding:20px;
     min-height:250px;
