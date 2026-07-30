@@ -8,5 +8,5 @@ button.addEventListener("click", function(){
     `<div class="user-message">
         ${input.value}
     </div>`;
-
+    input.value = "";
 });
