@@ -8,57 +8,76 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
-
 <body>
-
-<div class="container">
-
-    <header class="header">
-        <h1>AI Study Assistant</h1>
-        <button class="profile-btn">
-            <i class="fa-solid fa-user"></i>
-        </button>
-    </header>
-
-    <aside class="sidebar">
-        <h2>Menu</h2>
-
-        <button>Dashboard</button>
-        <button>History</button>
-        <button>Saved Notes</button>
-        <button>Settings</button>
-    </aside>
-
-    <main class="main">
-        <div class="input-box">
-            <input
-                type="text"
-                placeholder="Ask your question..."
-            >
-
-            <button class="ask-btn">
-                Ask AI
+    <div class="container">
+        <header class="header">
+            <div class="brand">
+                <i class="fa-solid fa-brain brand-icon"></i>
+                <div>
+                    <h1>AI Study Assistant</h1>
+                    <p>Learn Smarter. Study Better.</p>
+                </div>
+            </div>
+            <button class="profile-btn" aria-label="Open profile menu">
+                <i class="fa-solid fa-user"></i>
+                <i class="fa-solid fa-chevron-down"></i>
             </button>
-        </div>
+        </header>
 
-        <div class="response">
+        <aside class="sidebar">
+            <h2>Menu</h2>
+            <nav>
+                <button class="active"><i class="fa-solid fa-house"></i>Dashboard</button>
+                <button><i class="fa-solid fa-clock-rotate-left"></i>History</button>
+                <button><i class="fa-regular fa-file-lines"></i>Saved Notes</button>
+                <button><i class="fa-regular fa-bookmark"></i>Bookmarks</button>
+                <button><i class="fa-solid fa-gear"></i>Settings</button>
+                <button><i class="fa-regular fa-circle-question"></i>Help &amp; Support</button>
+            </nav>
+            <section class="study-tip">
+                <h3><i class="fa-regular fa-lightbulb"></i> Study Tip</h3>
+                <p>Consistency is the key to mastery. Study a little every day.</p>
+                <i class="fa-solid fa-quote-right quote"></i>
+            </section>
+        </aside>
 
-            <div class="message ai-message">
-                Hello! I am you AI Study Assistant. How can i help you today?
-            </div>
+        <main class="main">
+            <section class="workspace">
+                <div class="input-box">
+                    <input type="text" placeholder="Ask me anything about your studies..." aria-label="Ask a study question">
+                    <button class="ask-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> Ask AI</button>
+                </div>
 
-            <div class="message user-message">
-                Explain OOP concepts
-            </div>
+                <div class="response">
+                    <div class="user-row">
+                        <div>
+                            <div class="message user-message">Explain OOP concepts</div>
+                            <time>10:32 AM <i class="fa-solid fa-check-double"></i></time>
+                        </div>
+                        <span class="avatar user-avatar"><i class="fa-solid fa-user"></i></span>
+                    </div>
 
-        </div>
-
-    </main>
-
-</div>
-
+                    <div class="ai-row">
+                        <span class="avatar ai-avatar"><i class="fa-solid fa-robot"></i></span>
+                        <div class="message ai-message">
+                            <p>Object-Oriented Programming (OOP) is a programming paradigm based on the concept of <strong>“objects”</strong>, which can contain data in the form of fields (attributes) and code in the form of procedures (methods). OOP helps in structuring a program so that properties and behaviors are bundled into individual objects.</p>
+                            <h3>The four main pillars of OOP are:</h3>
+                            <ol>
+                                <li><span>1</span><p><strong>Encapsulation</strong> – Bundling data and methods that operate on the data within one unit (class).</p></li>
+                                <li><span>2</span><p><strong>Abstraction</strong> – Hiding complex implementation details and showing only the essential features.</p></li>
+                                <li><span>3</span><p><strong>Inheritance</strong> – Creating new classes from existing classes to reuse code and extend functionality.</p></li>
+                                <li><span>4</span><p><strong>Polymorphism</strong> – The ability of an object to take many forms.</p></li>
+                            </ol>
+                            <p>These principles make code more modular, reusable, and easier to maintain.</p>
+                            <time>10:33 AM</time>
+                        </div>
+                    </div>
+                </div>
+            </section>
+            <footer><i class="fa-regular fa-heart"></i> Made with <i class="fa-solid fa-heart"></i> to help you succeed</footer>
+        </main>
+    </div>
 </body>
 </html>

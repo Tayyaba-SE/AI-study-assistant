@@ -20,7 +20,7 @@ question = input("Ask me anything: ")
 # Generate AI response
 try:
     response = client.models.generate_content(
-        model="models/gemini-3.5-flash",
+        model="models/gemini-3.1-flash-lite",
         contents=question,
     )
 
