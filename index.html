@@ -29,12 +29,12 @@
         <aside class="sidebar">
             <h2>Menu</h2>
             <nav>
-                <button class="active"><i class="fa-solid fa-house"></i>Dashboard</button>
-                <button><i class="fa-solid fa-clock-rotate-left"></i>History</button>
-                <button><i class="fa-regular fa-file-lines"></i>Saved Notes</button>
-                <button><i class="fa-regular fa-bookmark"></i>Bookmarks</button>
-                <button><i class="fa-solid fa-gear"></i>Settings</button>
-                <button><i class="fa-regular fa-circle-question"></i>Help &amp; Support</button>
+                <button class="active" data-view="dashboard"><i class="fa-solid fa-house"></i>Dashboard</button>
+                <button data-view="history"><i class="fa-solid fa-clock-rotate-left"></i>History</button>
+                <button data-view="notes"><i class="fa-regular fa-file-lines"></i>Saved Notes</button>
+                <button data-view="bookmarks"><i class="fa-regular fa-bookmark"></i>Bookmarks</button>
+                <button data-view="settings"><i class="fa-solid fa-gear"></i>Settings</button>
+                <button data-view="help"><i class="fa-regular fa-circle-question"></i>Help &amp; Support</button>
             </nav>
             <section class="study-tip">
                 <h3><i class="fa-regular fa-lightbulb"></i> Study Tip</h3>
@@ -45,6 +45,18 @@
 
         <main class="main">
             <section class="workspace">
+                <div class="workspace-banner">
+                    <div>
+                        <p class="workspace-eyebrow">Study Mode</p>
+                        <h2 id="workspace-title">Dashboard</h2>
+                        <p id="workspace-description">Ask anything about your studies and get instant guidance.</p>
+                    </div>
+                    <div class="workspace-pill">
+                        <i class="fa-solid fa-bolt"></i>
+                        <span>Live AI</span>
+                    </div>
+                </div>
+
                 <div class="input-box">
                     <input type="text" placeholder="Ask me anything about your studies..." aria-label="Ask a study question">
                     <button class="ask-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> Ask AI</button>
