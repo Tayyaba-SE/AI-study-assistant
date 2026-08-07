@@ -1,139 +1,876 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>AI Study Assistant</title>
 
-    <!-- Custom stylesheet for this app -->
+    <!-- CSS -->
     <link rel="stylesheet" href="style.css">
 
-    <!-- Font Awesome: gives us the little icons (brain, user, gear, etc.) -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <!-- Font Awesome -->
+    <link rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
 
-    <!-- Preconnect hints speed up loading of Google Fonts -->
+    <!-- Google Font -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- The "Poppins" font used throughout the design -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-</head>
-<body>
-    <!-- Outer wrapper holding the entire app layout (header + sidebar + main) -->
-    <div class="container">
 
-        <!-- ===================== HEADER ===================== -->
-        <header class="header">
-            <!-- Left side: app logo/brand name -->
-            <div class="brand">
-                <i class="fa-solid fa-brain brand-icon"></i>
-                <div>
-                    <h1>AI Study Assistant</h1>
-                    <p>Learn Smarter. Study Better.</p>
-                </div>
+    <link rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap"
+        rel="stylesheet">
+
+</head>
+
+<body>
+
+<div class="container">
+
+    <!-- ========================================= -->
+    <!-- SIDEBAR -->
+    <!-- ========================================= -->
+
+    <aside class="sidebar">
+
+        <div class="logo">
+
+            <div class="logo-icon">
+
+                <i class="fa-solid fa-brain"></i>
+
             </div>
 
-            <!-- Right side: profile button (dropdown trigger) -->
-            <button class="profile-btn" aria-label="Open profile menu">
-                <i class="fa-solid fa-user"></i>
-                <i class="fa-solid fa-chevron-down"></i>
+            <div>
+
+                <h2>AI Study Assistant</h2>
+
+                <p>Learn Smarter</p>
+
+            </div>
+
+        </div>
+
+
+        <button class="new-chat">
+
+            <i class="fa-solid fa-plus"></i>
+
+            New Chat
+
+        </button>
+
+
+        <nav>
+
+            <button class="active">
+
+                <i class="fa-solid fa-house"></i>
+
+                Dashboard
+
             </button>
+
+            <button>
+
+                <i class="fa-solid fa-clock-rotate-left"></i>
+
+                Chat History
+
+            </button>
+
+            <button>
+
+                <i class="fa-solid fa-book-open"></i>
+
+                Saved Notes
+
+            </button>
+
+            <button>
+
+                <i class="fa-solid fa-layer-group"></i>
+
+                Flashcards
+
+            </button>
+
+            <button>
+
+                <i class="fa-solid fa-list-check"></i>
+
+                Quiz Generator
+
+            </button>
+
+            <button>
+
+                <i class="fa-solid fa-calendar-days"></i>
+
+                Study Planner
+
+            </button>
+
+            <button>
+
+                <i class="fa-solid fa-diagram-project"></i>
+
+                Mind Maps
+
+            </button>
+
+            <button>
+
+                <i class="fa-solid fa-file-pen"></i>
+
+                Assignment Helper
+
+            </button>
+
+            <button>
+
+                <i class="fa-solid fa-code"></i>
+
+                Debug Code
+
+            </button>
+
+            <button>
+
+                <i class="fa-solid fa-bookmark"></i>
+
+                Bookmarks
+
+            </button>
+
+            <button>
+
+                <i class="fa-solid fa-gear"></i>
+
+                Settings
+
+            </button>
+
+            <button>
+
+                <i class="fa-solid fa-circle-question"></i>
+
+                Help & Support
+
+            </button>
+
+        </nav>
+
+
+        <div class="sidebar-bottom">
+
+            <div class="profile-card">
+
+                <img src="images/profile.png" alt="Profile">
+
+                <div>
+
+                    <h4>Tayyaba</h4>
+
+                    <span>Software Engineering Student</span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+
+
+    <!-- ========================================= -->
+    <!-- MAIN -->
+    <!-- ========================================= -->
+
+    <main class="main">
+
+
+        <!-- ========================================= -->
+        <!-- TOP NAVIGATION -->
+        <!-- ========================================= -->
+
+        <header class="topbar">
+
+            <div>
+
+                <h1>
+
+                    Good Morning 👋
+
+                </h1>
+
+                <p>
+
+                    Ready to study today?
+
+                </p>
+
+            </div>
+
+
+            <div class="top-right">
+
+                <div class="search-box">
+
+                    <i class="fa-solid fa-magnifying-glass"></i>
+
+                    <input
+                        type="text"
+                        placeholder="Search conversations">
+
+                </div>
+
+
+                <button class="icon-btn">
+
+                    <i class="fa-regular fa-bell"></i>
+
+                </button>
+
+
+                <button class="icon-btn">
+
+                    <i class="fa-solid fa-moon"></i>
+
+                </button>
+
+
+                <button class="icon-btn">
+
+                    <i class="fa-solid fa-user"></i>
+
+                </button>
+
+            </div>
+
         </header>
 
-        <!-- ===================== SIDEBAR ===================== -->
-        <aside class="sidebar">
-            <h2>Menu</h2>
 
-            <!-- Navigation buttons. data-view is used by JavaScript
-                 to know which "page"/view to switch to when clicked. -->
-            <nav>
-                <button class="active" data-view="dashboard"><i class="fa-solid fa-house"></i>Dashboard</button>
-                <button data-view="history"><i class="fa-solid fa-clock-rotate-left"></i>History</button>
-                <button data-view="notes"><i class="fa-regular fa-file-lines"></i>Saved Notes</button>
-                <button data-view="bookmarks"><i class="fa-regular fa-bookmark"></i>Bookmarks</button>
-                <button data-view="settings"><i class="fa-solid fa-gear"></i>Settings</button>
-                <button data-view="help"><i class="fa-regular fa-circle-question"></i>Help &amp; Support</button>
-            </nav>
 
-            <!-- Small motivational "study tip" card at the bottom of the sidebar -->
-            <section class="study-tip">
-                <h3><i class="fa-regular fa-lightbulb"></i> Study Tip</h3>
-                <p>Consistency is the key to mastery. Study a little every day.</p>
-                <i class="fa-solid fa-quote-right quote"></i>
+        <!-- ========================================= -->
+        <!-- DASHBOARD -->
+        <!-- ========================================= -->
+
+        <section class="dashboard">
+
+
+            <!-- Statistics -->
+
+            <div class="stats">
+
+                <div class="stat-card">
+
+                    <i class="fa-solid fa-chart-line"></i>
+
+                    <h3>Study Progress</h3>
+
+                    <h2>82%</h2>
+
+                    <span>This Week</span>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <i class="fa-solid fa-fire"></i>
+
+                    <h3>Learning Streak</h3>
+
+                    <h2>18 Days</h2>
+
+                    <span>Keep Going</span>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <i class="fa-solid fa-calendar-check"></i>
+
+                    <h3>Assignments</h3>
+
+                    <h2>3</h2>
+
+                    <span>Pending</span>
+
+                </div>
+
+
+                <div class="stat-card">
+
+                    <i class="fa-solid fa-comments"></i>
+
+                    <h3>AI Chats</h3>
+
+                    <h2>48</h2>
+
+                    <span>Total</span>
+
+                </div>
+
+            </div>
+
+
+
+            <!-- Quick Actions -->
+
+            <section class="quick-actions">
+
+                <button>
+
+                    <i class="fa-solid fa-lightbulb"></i>
+
+                    Explain Concept
+
+                </button>
+
+                <button>
+
+                    <i class="fa-solid fa-bug"></i>
+
+                    Debug Code
+
+                </button>
+
+                <button>
+
+                    <i class="fa-solid fa-file-lines"></i>
+
+                    Summarize Notes
+
+                </button>
+
+                <button>
+
+                    <i class="fa-solid fa-list-check"></i>
+
+                    Generate Quiz
+
+                </button>
+
+                <button>
+
+                    <i class="fa-solid fa-layer-group"></i>
+
+                    Flashcards
+
+                </button>
+
+                <button>
+
+                    <i class="fa-solid fa-file-arrow-up"></i>
+
+                    Upload PDF
+
+                </button>
+
             </section>
-        </aside>
+                    <!-- ========================================= -->
+        <!-- AI FEATURES -->
+        <!-- ========================================= -->
 
-        <!-- ===================== MAIN CONTENT ===================== -->
-        <main class="main">
-            <section class="workspace">
+        <section class="feature-section">
 
-                <!-- Banner showing the current view's title/description -->
-                <div class="workspace-banner">
+            <div class="section-title">
+
+                <h2>AI Tools</h2>
+
+                <p>Everything you need for university in one place.</p>
+
+            </div>
+
+            <div class="feature-grid">
+
+                <div class="feature-card">
+                    <i class="fa-solid fa-lightbulb"></i>
+                    <h3>Explain Concepts</h3>
+                    <p>Understand difficult topics with simple AI explanations.</p>
+                </div>
+
+                <div class="feature-card">
+                    <i class="fa-solid fa-code"></i>
+                    <h3>Programming Help</h3>
+                    <p>Generate code, fix bugs and learn programming.</p>
+                </div>
+
+                <div class="feature-card">
+                    <i class="fa-solid fa-bug"></i>
+                    <h3>Debug Code</h3>
+                    <p>Find and fix coding errors instantly.</p>
+                </div>
+
+                <div class="feature-card">
+                    <i class="fa-solid fa-file-lines"></i>
+                    <h3>PDF Summaries</h3>
+                    <p>Summarize lecture notes and textbooks.</p>
+                </div>
+
+                <div class="feature-card">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <h3>Flashcards</h3>
+                    <p>Create revision flashcards automatically.</p>
+                </div>
+
+                <div class="feature-card">
+                    <i class="fa-solid fa-list-check"></i>
+                    <h3>Quiz Generator</h3>
+                    <p>Create MCQs from any topic.</p>
+                </div>
+
+                <div class="feature-card">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <h3>Study Planner</h3>
+                    <p>Plan your semester and daily study schedule.</p>
+                </div>
+
+                <div class="feature-card">
+                    <i class="fa-solid fa-diagram-project"></i>
+                    <h3>Mind Maps</h3>
+                    <p>Visualize complex concepts.</p>
+                </div>
+
+                <div class="feature-card">
+                    <i class="fa-solid fa-language"></i>
+                    <h3>English Practice</h3>
+                    <p>Improve grammar and speaking skills.</p>
+                </div>
+
+                <div class="feature-card">
+                    <i class="fa-solid fa-square-root-variable"></i>
+                    <h3>Mathematics Solver</h3>
+                    <p>Solve equations with explanations.</p>
+                </div>
+
+                <div class="feature-card">
+                    <i class="fa-brands fa-git-alt"></i>
+                    <h3>Git Commit Suggestions</h3>
+                    <p>Create professional commit messages.</p>
+                </div>
+
+                <div class="feature-card">
+                    <i class="fa-solid fa-book"></i>
+                    <h3>README Generator</h3>
+                    <p>Create beautiful GitHub README files.</p>
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ========================================= -->
+        <!-- CHAT SECTION -->
+        <!-- ========================================= -->
+
+        <section class="chat-section">
+
+            <div class="chat-header">
+
+                <div>
+
+                    <h2>AI Conversation</h2>
+
+                    <p>Your personal study assistant powered by Gemini AI</p>
+
+                </div>
+
+                <div class="chat-status">
+
+                    <span class="status-dot"></span>
+
+                    AI Online
+
+                </div>
+
+            </div>
+
+
+
+            <div class="chat-container">
+
+
+
+                <!-- User Message -->
+
+                <div class="user-row">
+
                     <div>
-                        <p class="workspace-eyebrow">Study Mode</p>
-                        <!-- These ids let JavaScript update the title/description
-                             dynamically when the user switches views -->
-                        <h2 id="workspace-title">Dashboard</h2>
-                        <p id="workspace-description">Ask anything about your studies and get instant guidance.</p>
-                    </div>
-                    <div class="workspace-pill">
-                        <i class="fa-solid fa-bolt"></i>
-                        <span>Live AI</span>
-                    </div>
-                </div>
 
-                <!-- Input box where the user types their question -->
-                <div class="input-box">
-                    <input type="text" placeholder="Ask me anything about your studies..." aria-label="Ask a study question">
-                    <button class="ask-btn"><i class="fa-solid fa-wand-magic-sparkles"></i> Ask AI</button>
-                </div>
+                        <div class="message user-message">
 
-                <!-- Chat/response area: shows the conversation history -->
-                <div class="response">
+                            Explain Object-Oriented Programming.
 
-                    <!-- A single user message row -->
-                    <div class="user-row">
-                        <div>
-                            <div class="message user-message">Explain OOP concepts</div>
-                            <time>10:32 AM <i class="fa-solid fa-check-double"></i></time>
                         </div>
-                        <span class="avatar user-avatar"><i class="fa-solid fa-user"></i></span>
+
+                        <time>
+
+                            10:32 AM
+
+                            <i class="fa-solid fa-check-double"></i>
+
+                        </time>
+
                     </div>
 
-                    <!-- The AI's reply to that message -->
-                    <div class="ai-row">
-                        <span class="avatar ai-avatar"><i class="fa-solid fa-robot"></i></span>
-                        <div class="message ai-message">
-                            <p>Object-Oriented Programming (OOP) is a programming paradigm based on the concept of <strong>“objects”</strong>, which can contain data in the form of fields (attributes) and code in the form of procedures (methods). OOP helps in structuring a program so that properties and behaviors are bundled into individual objects.</p>
+                    <span class="avatar user-avatar">
 
-                            <h3>The four main pillars of OOP are:</h3>
-                            <!-- Ordered list explaining each OOP pillar -->
-                            <ol>
-                                <li><span>1</span><p><strong>Encapsulation</strong> – Bundling data and methods that operate on the data within one unit (class).</p></li>
-                                <li><span>2</span><p><strong>Abstraction</strong> – Hiding complex implementation details and showing only the essential features.</p></li>
-                                <li><span>3</span><p><strong>Inheritance</strong> – Creating new classes from existing classes to reuse code and extend functionality.</p></li>
-                                <li><span>4</span><p><strong>Polymorphism</strong> – The ability of an object to take many forms.</p></li>
-                            </ol>
+                        <i class="fa-solid fa-user"></i>
 
-                            <p>These principles make code more modular, reusable, and easier to maintain.</p>
-                            <time>10:33 AM</time>
+                    </span>
+
+                </div>
+
+
+
+                <!-- AI Message -->
+
+                <div class="ai-row">
+
+                    <span class="avatar ai-avatar">
+
+                        <i class="fa-solid fa-robot"></i>
+
+                    </span>
+
+                    <div class="message ai-message">
+
+                        <h3>
+
+                            Object-Oriented Programming
+
+                        </h3>
+
+                        <p>
+
+                            Object-Oriented Programming (OOP) is a programming
+                            paradigm based on classes and objects. It helps
+                            developers build reusable, modular and maintainable
+                            software.
+
+                        </p>
+
+                        <h4>
+
+                            Four Pillars
+
+                        </h4>
+
+                        <ol>
+
+                            <li>Encapsulation</li>
+
+                            <li>Abstraction</li>
+
+                            <li>Inheritance</li>
+
+                            <li>Polymorphism</li>
+
+                        </ol>
+
+
+
+<pre><code class="language-java">
+class Student{
+
+    String name;
+
+    int age;
+
+}
+</code></pre>
+
+
+
+                        <div class="message-actions">
+
+                            <button>
+
+                                <i class="fa-regular fa-copy"></i>
+
+                                Copy
+
+                            </button>
+
+                            <button>
+
+                                <i class="fa-solid fa-rotate"></i>
+
+                                Regenerate
+
+                            </button>
+
+                            <button>
+
+                                <i class="fa-regular fa-thumbs-up"></i>
+
+                            </button>
+
+                            <button>
+
+                                <i class="fa-regular fa-thumbs-down"></i>
+
+                            </button>
+
                         </div>
+
+                        <time>
+
+                            10:33 AM
+
+                        </time>
+
                     </div>
 
                 </div>
-                <!-- End of chat/response area -->
 
-            </section>
 
-            <!-- Simple footer at the bottom of the main content -->
-            <footer><i class="fa-regular fa-heart"></i> Made with <i class="fa-solid fa-heart"></i> to help you succeed</footer>
-        </main>
-    </div>
 
-    <!-- This was missing before — without it, script.js never runs and
-         the "Ask AI" button, Enter-key handling, and sidebar switching
-         all silently do nothing. `defer` makes sure the HTML above is
-         fully parsed (so document.querySelector can find it) before
-         the script executes. -->
-    <script src="script.js" defer></script>
+                <!-- Typing Indicator -->
+
+                <div class="typing">
+
+                    <span></span>
+
+                    <span></span>
+
+                    <span></span>
+
+                    <p>
+
+                        AI is thinking...
+
+                    </p>
+
+                </div>
+
+            </div>
+                    </section>
+
+        <!-- ========================================= -->
+        <!-- PROMPT AREA -->
+        <!-- ========================================= -->
+
+        <section class="prompt-section">
+
+            <div class="prompt-box">
+
+                <button class="prompt-icon" title="Upload File">
+
+                    <i class="fa-solid fa-paperclip"></i>
+
+                </button>
+
+                <button class="prompt-icon" title="Upload Image">
+
+                    <i class="fa-solid fa-image"></i>
+
+                </button>
+
+                <input
+                    type="text"
+                    class="prompt-input"
+                    placeholder="Ask anything about programming, university courses, assignments, mathematics, or upload your study material..."
+                >
+
+                <button class="prompt-icon" title="Voice Input">
+
+                    <i class="fa-solid fa-microphone"></i>
+
+                </button>
+
+                <button class="prompt-icon stop-btn" title="Stop Generation">
+
+                    <i class="fa-solid fa-stop"></i>
+
+                </button>
+
+                <button class="send-btn">
+
+                    <i class="fa-solid fa-paper-plane"></i>
+
+                    Send
+
+                </button>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ========================================= -->
+        <!-- RECENT CONVERSATIONS -->
+        <!-- ========================================= -->
+
+        <section class="recent-section">
+
+            <div class="section-header">
+
+                <h2>
+
+                    Recent Conversations
+
+                </h2>
+
+                <button>
+
+                    View All
+
+                </button>
+
+            </div>
+
+            <div class="recent-list">
+
+                <div class="recent-card">
+
+                    <i class="fa-solid fa-code"></i>
+
+                    <div>
+
+                        <h4>
+
+                            Java OOP Concepts
+
+                        </h4>
+
+                        <span>
+
+                            Yesterday
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div class="recent-card">
+
+                    <i class="fa-solid fa-square-root-variable"></i>
+
+                    <div>
+
+                        <h4>
+
+                            Calculus Revision
+
+                        </h4>
+
+                        <span>
+
+                            2 Days Ago
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+                <div class="recent-card">
+
+                    <i class="fa-solid fa-file-lines"></i>
+
+                    <div>
+
+                        <h4>
+
+                            PF Assignment
+
+                        </h4>
+
+                        <span>
+
+                            Last Week
+
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+
+        <!-- ========================================= -->
+        <!-- FOOTER -->
+        <!-- ========================================= -->
+
+        <footer>
+
+            <div>
+
+                <h3>
+
+                    AI Study Assistant
+
+                </h3>
+
+                <p>
+
+                    Learn Smarter • Build Faster • Study Better
+
+                </p>
+
+            </div>
+
+            <div class="footer-links">
+
+                <a href="#">
+
+                    Privacy
+
+                </a>
+
+                <a href="#">
+
+                    Terms
+
+                </a>
+
+                <a href="#">
+
+                    Support
+
+                </a>
+
+                <a href="#">
+
+                    GitHub
+
+                </a>
+
+            </div>
+
+            <p class="copyright">
+
+                © 2026 AI Study Assistant. Powered by Gemini AI.
+
+            </p>
+
+        </footer>
+
+    </main>
+
+</div>
+
+<script src="script.js"></script>
+
 </body>
+
 </html>
