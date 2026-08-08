@@ -26,6 +26,7 @@ const chatView = document.getElementById("chatView");
 const historyView = document.getElementById("historyView");
 const notesView = document.getElementById("notesView");
 const bookmarksView = document.getElementById("bookmarksView");
+const flashcardsView = document.getElementById("flashcardsView");
 const responseEl = document.getElementById("response");
 
 const messageInput = document.getElementById("messageInput");
@@ -59,7 +60,8 @@ const STORAGE_KEYS = {
     conversations: "studyai-conversations",
     activeId: "studyai-active-conversation-id",
     notes: "studyai-notes",
-    bookmarks: "studyai-bookmarks"
+    bookmarks: "studyai-bookmarks",
+    flashcardDecks: "studyai-flashcard-decks"
 };
 
 // ---------------------------------------------------------
@@ -137,7 +139,8 @@ const views = {
     chat: chatView,
     history: historyView,
     notes: notesView,
-    bookmarks: bookmarksView
+    bookmarks: bookmarksView,
+    flashcards: flashcardsView
 };
 
 function showView(name) {
@@ -151,7 +154,6 @@ function showView(name) {
 // ---------------------------------------------------------
 const viewConfigs = {
     dashboard: { placeholder: "Ask anything about programming, university courses, assignments, mathematics, or upload your study material..." },
-    flashcards: { placeholder: "Tell me a topic to turn into flashcards...", intro: "Flashcard generation is coming in a future update — for now, ask me directly and I'll list them out in chat." },
     quiz: { placeholder: "Tell me a topic to quiz you on...", intro: "The dedicated quiz builder is coming soon — for now, ask me to quiz you here in chat." },
     planner: { placeholder: "Tell me what you need to study and by when...", intro: "The study planner is coming soon — for now, tell me your subjects and deadlines here in chat." },
     settings: { placeholder: "Tell me how you want the assistant to behave...", intro: "Settings are coming soon." },
@@ -224,6 +226,7 @@ function handleNavClick(viewName, target) {
     if (viewName === "history") { showView("history"); renderHistory(); return; }
     if (viewName === "notes") { showView("notes"); renderNotes(); return; }
     if (viewName === "bookmarks") { showView("bookmarks"); renderBookmarks(); return; }
+    if (viewName === "flashcards") { showView("flashcards"); renderSavedDecks(); return; }
 
     // Phase 2+ features: land in chat with a short explanatory note
     const config = viewConfigs[viewName] || viewConfigs.dashboard;
@@ -646,7 +649,177 @@ function renderBookmarks() {
 }
 
 // ---------------------------------------------------------
-// 18. Initial state: restore the last active conversation if
+// 18. Flashcards
+// ---------------------------------------------------------
+const flashcardForm = document.getElementById("flashcardForm");
+const flashcardTopicInput = document.getElementById("flashcardTopicInput");
+const flashcardCountInput = document.getElementById("flashcardCountInput");
+const flashcardGenerateBtn = document.getElementById("flashcardGenerateBtn");
+const flashcardError = document.getElementById("flashcardError");
+
+const flashcardStage = document.getElementById("flashcardStage");
+const flashcardDeckTitle = document.getElementById("flashcardDeckTitle");
+const saveDeckBtn = document.getElementById("saveDeckBtn");
+const flipCard = document.getElementById("flipCard");
+const flashcardQuestionText = document.getElementById("flashcardQuestionText");
+const flashcardAnswerText = document.getElementById("flashcardAnswerText");
+const flashcardProgress = document.getElementById("flashcardProgress");
+const prevCardBtn = document.getElementById("prevCardBtn");
+const nextCardBtn = document.getElementById("nextCardBtn");
+const restartDeckBtn = document.getElementById("restartDeckBtn");
+
+const savedDecksList = document.getElementById("savedDecksList");
+const savedDecksEmpty = document.getElementById("savedDecksEmpty");
+
+// currentDeck: { topic, flashcards: [{question, answer}], createdAt, savedId }
+// savedId is null until the deck has been saved (or was opened from Saved decks)
+let currentDeck = null;
+let currentCardIndex = 0;
+
+function loadDecks() { return loadList(STORAGE_KEYS.flashcardDecks); }
+function saveDecks(list) { saveList(STORAGE_KEYS.flashcardDecks, list); }
+
+function showFlashcardError(message) {
+    flashcardError.textContent = message;
+    flashcardError.hidden = false;
+}
+function hideFlashcardError() { flashcardError.hidden = true; }
+
+function renderFlashcard() {
+    if (!currentDeck || !currentDeck.flashcards.length) return;
+    const card = currentDeck.flashcards[currentCardIndex];
+    flashcardQuestionText.textContent = card.question;
+    flashcardAnswerText.textContent = card.answer;
+    flashcardProgress.textContent = `${currentCardIndex + 1} / ${currentDeck.flashcards.length}`;
+    flipCard.classList.remove("flipped");
+    prevCardBtn.disabled = currentCardIndex === 0;
+    nextCardBtn.disabled = currentCardIndex === currentDeck.flashcards.length - 1;
+}
+
+function openDeckInStage(deck, savedId) {
+    currentDeck = {
+        topic: deck.topic,
+        flashcards: deck.flashcards,
+        createdAt: deck.createdAt || Date.now(),
+        savedId: savedId || null
+    };
+    currentCardIndex = 0;
+    flashcardDeckTitle.textContent = deck.topic;
+    flashcardStage.hidden = false;
+    renderFlashcard();
+    flashcardStage.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+flipCard.addEventListener("click", () => flipCard.classList.toggle("flipped"));
+
+prevCardBtn.addEventListener("click", () => {
+    if (currentCardIndex > 0) { currentCardIndex -= 1; renderFlashcard(); }
+});
+nextCardBtn.addEventListener("click", () => {
+    if (currentDeck && currentCardIndex < currentDeck.flashcards.length - 1) { currentCardIndex += 1; renderFlashcard(); }
+});
+restartDeckBtn.addEventListener("click", () => { currentCardIndex = 0; renderFlashcard(); });
+
+saveDeckBtn.addEventListener("click", () => {
+    if (!currentDeck) return;
+    const decks = loadDecks();
+
+    if (currentDeck.savedId) {
+        const idx = decks.findIndex((d) => d.id === currentDeck.savedId);
+        if (idx >= 0) decks[idx].flashcards = currentDeck.flashcards;
+    } else {
+        const id = String(Date.now());
+        decks.unshift({ id, topic: currentDeck.topic, flashcards: currentDeck.flashcards, createdAt: Date.now() });
+        currentDeck.savedId = id;
+    }
+
+    saveDecks(decks);
+    renderSavedDecks();
+
+    const original = saveDeckBtn.innerHTML;
+    saveDeckBtn.innerHTML = '<i class="fa-solid fa-check"></i> Saved';
+    setTimeout(() => { saveDeckBtn.innerHTML = original; }, 1400);
+});
+
+function deleteDeck(id) {
+    if (!confirm("Delete this saved deck?")) return;
+    saveDecks(loadDecks().filter((d) => d.id !== id));
+    if (currentDeck && currentDeck.savedId === id) currentDeck.savedId = null;
+    renderSavedDecks();
+}
+
+function renderSavedDecks() {
+    const decks = loadDecks().sort((a, b) => b.createdAt - a.createdAt);
+    savedDecksEmpty.hidden = decks.length !== 0;
+
+    savedDecksList.innerHTML = decks.map((d) => `
+        <button class="list-card" data-id="${d.id}">
+            <div class="list-card-main">
+                <p class="list-card-title">${escapeHtml(d.topic)}</p>
+                <p class="list-card-meta">${formatShortDate(d.createdAt)} \u00B7 ${d.flashcards.length} cards</p>
+            </div>
+            <span class="icon-btn-sm delete-deck" data-id="${d.id}" title="Delete" role="button" tabindex="0">
+                <i class="fa-solid fa-trash"></i>
+            </span>
+        </button>
+    `).join("");
+
+    savedDecksList.querySelectorAll(".list-card").forEach((card) => {
+        card.addEventListener("click", (e) => {
+            if (e.target.closest(".delete-deck")) return;
+            const deck = decks.find((d) => d.id === card.dataset.id);
+            if (deck) openDeckInStage(deck, deck.id);
+        });
+    });
+    savedDecksList.querySelectorAll(".delete-deck").forEach((btn) => {
+        btn.addEventListener("click", (e) => { e.stopPropagation(); deleteDeck(btn.dataset.id); });
+    });
+}
+
+flashcardForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideFlashcardError();
+
+    const topic = flashcardTopicInput.value.trim();
+    const count = parseInt(flashcardCountInput.value, 10) || 10;
+
+    if (!topic) {
+        showFlashcardError("Please enter a topic to generate flashcards.");
+        flashcardTopicInput.focus();
+        return;
+    }
+
+    flashcardGenerateBtn.disabled = true;
+    const originalBtnHtml = flashcardGenerateBtn.innerHTML;
+    flashcardGenerateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating flashcards...';
+    flashcardStage.hidden = true;
+
+    try {
+        const res = await fetch("/generate-flashcards", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ topic, count })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !Array.isArray(data.flashcards) || data.flashcards.length === 0) {
+            showFlashcardError(data.error || "Couldn't generate flashcards for that topic. Please try again.");
+        } else {
+            openDeckInStage({ topic, flashcards: data.flashcards, createdAt: Date.now() });
+        }
+    } catch (error) {
+        console.error(error);
+        showFlashcardError("Unable to connect to the Flask server.");
+    }
+
+    flashcardGenerateBtn.disabled = false;
+    flashcardGenerateBtn.innerHTML = originalBtnHtml;
+});
+
+renderSavedDecks();
+
+// ---------------------------------------------------------
+// 19. Initial state: restore the last active conversation if
 //     one exists, otherwise show the welcome dashboard
 // ---------------------------------------------------------
 (function init() {

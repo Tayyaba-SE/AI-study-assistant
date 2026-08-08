@@ -6,9 +6,13 @@
 #   2. Exposes a /health endpoint to check the server is alive
 #   3. Exposes a /chat endpoint that the front-end JavaScript
 #      calls to send a question and receive an AI-generated reply
+#   4. Exposes a /generate-flashcards endpoint that turns a
+#      topic into a structured, AI-generated flashcard deck
 # =========================================================
 
 import os
+import re
+import json
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS          # Allows the front-end (browser) to call this API
 from dotenv import load_dotenv       # Loads variables from a .env file
@@ -97,7 +101,114 @@ def chat():
 
 
 # ---------------------------------------------------------
-# 7. Run the server
+# 7. Helper: ask Gemini for a JSON-structured response
+# ---------------------------------------------------------
+# Shared by /generate-flashcards now, and reusable by
+# /generate-quiz, /study-plan, etc. in later phases so the
+# "call Gemini and parse JSON" logic isn't duplicated per route.
+def generate_structured_json(prompt):
+    """
+    Sends `prompt` to Gemini and parses the reply as JSON.
+    Raises json.JSONDecodeError if Gemini's response isn't
+    valid JSON (e.g. it wrapped the answer in prose or
+    markdown fences despite being asked not to).
+    """
+    response = client.models.generate_content(
+        model=MODEL,
+        contents=prompt
+    )
+    text = (response.text or "").strip()
+
+    # Defensive cleanup: strip ```json ... ``` fences if Gemini
+    # adds them anyway, so json.loads doesn't choke on them.
+    if text.startswith("```"):
+        text = re.sub(r"^```(?:json)?\s*", "", text)
+        text = re.sub(r"\s*```$", "", text)
+
+    return json.loads(text)
+
+
+# ---------------------------------------------------------
+# 8. Route: "/generate-flashcards" — AI flashcard generator
+# ---------------------------------------------------------
+@app.route("/generate-flashcards", methods=["POST"])
+def generate_flashcards():
+    data = request.get_json(silent=True) or {}
+
+    # ---- Validate the topic ----
+    topic = str(data.get("topic", "")).strip()
+    if not topic:
+        return jsonify({"error": "Please provide a topic."}), 400
+    if len(topic) > 200:
+        return jsonify({"error": "That topic is too long. Try something shorter."}), 400
+
+    # ---- Validate the requested card count ----
+    try:
+        count = int(data.get("count", 10))
+    except (TypeError, ValueError):
+        count = 10
+    count = max(3, min(count, 25))  # keep requests reasonable
+
+    # ---- Build the educational prompt ----
+    prompt = f"""You are an educational AI assistant.
+
+Generate {count} high-quality flashcards about {topic}.
+
+Each flashcard must contain:
+- question
+- answer
+
+Questions should test understanding rather than only memorization.
+
+Answers should be concise, accurate, and appropriate for a university student.
+
+Return ONLY valid JSON in this format:
+
+{{
+    "flashcards": [
+        {{
+            "question": "...",
+            "answer": "..."
+        }}
+    ]
+}}
+
+Do not return Markdown.
+Do not return ```json.
+Do not include explanations outside the JSON."""
+
+    # ---- Call Gemini and parse its response ----
+    try:
+        parsed = generate_structured_json(prompt)
+    except json.JSONDecodeError:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+    except Exception as e:
+        # Bad API key, network issue, quota, etc.
+        print(f"[/generate-flashcards] Gemini error: {e}")
+        return jsonify({"error": "Something went wrong generating flashcards. Please try again."}), 500
+
+    # ---- Validate the structure of what Gemini returned ----
+    raw_cards = parsed.get("flashcards") if isinstance(parsed, dict) else None
+    if not isinstance(raw_cards, list):
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    flashcards = []
+    for card in raw_cards:
+        if not isinstance(card, dict):
+            continue
+        question = str(card.get("question", "")).strip()
+        answer = str(card.get("answer", "")).strip()
+        if question and answer:
+            flashcards.append({"question": question, "answer": answer})
+
+    if not flashcards:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    return jsonify({"flashcards": flashcards[:count]})
+
+
+# ---------------------------------------------------------
+# 9. Run the server
 # ---------------------------------------------------------
 # host="0.0.0.0" makes the server reachable from other devices
 # on the network, not just localhost.

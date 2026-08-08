@@ -381,6 +381,68 @@ html[data-theme="dark"] .composer-icon-btn:hover { background: var(--surface-2);
 .send-btn:disabled { opacity: .55; cursor: not-allowed; transform: none; }
 .composer-hint { max-width: 900px; margin: 8px auto 0; text-align: center; color: var(--muted); font-size: 11.5px; }
 
+/* ===================== FLASHCARDS ===================== */
+.flashcard-form {
+    display: flex; flex-direction: column; gap: 14px; padding: 18px;
+    border: 1px solid var(--border); border-radius: var(--radius-md); background: var(--surface);
+    box-shadow: var(--shadow-sm); margin-bottom: 14px;
+}
+.flashcard-form-row { display: flex; gap: 14px; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 200px; }
+.field-narrow { flex: 0 0 160px; min-width: 140px; }
+.field span { font: 600 12.5px var(--font-body); color: var(--muted); }
+.field input, .field select {
+    height: 42px; padding: 0 14px; border: 1px solid var(--border); border-radius: 10px;
+    background: var(--surface-2); color: var(--text); font: 400 14px var(--font-body); outline: 0;
+}
+.field input:focus, .field select:focus { border-color: var(--royal); }
+.flashcard-form .primary-btn { align-self: flex-start; height: 44px; padding: 0 22px; font-size: 14px; }
+.flashcard-form .primary-btn:disabled { opacity: .65; cursor: not-allowed; }
+
+.flashcard-error {
+    padding: 12px 16px; border: 1px solid #F3C9C4; border-left: 4px solid #E0574C; border-radius: 12px;
+    background: #FDF2F1; color: #9B2F26; font-size: 13.5px; margin-bottom: 14px;
+}
+html[data-theme="dark"] .flashcard-error { background: rgba(224, 87, 76, .12); border-color: rgba(224, 87, 76, .4); color: #F3ACA4; }
+
+.flashcard-stage { margin: 8px 0 30px; }
+.flashcard-stage-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 16px; }
+.flashcard-stage-header h3 { font: 700 16px var(--font-display); color: var(--navy); }
+html[data-theme="dark"] .flashcard-stage-header h3 { color: var(--ice); }
+
+.flip-card { width: 100%; max-width: 520px; height: 240px; margin: 0 auto; perspective: 1400px; cursor: pointer; }
+.flip-card-inner { position: relative; width: 100%; height: 100%; text-align: center; transition: transform .5s cubic-bezier(.4,.2,.2,1); transform-style: preserve-3d; }
+.flip-card.flipped .flip-card-inner { transform: rotateY(180deg); }
+
+.flip-card-face {
+    position: absolute; inset: 0; backface-visibility: hidden; -webkit-backface-visibility: hidden;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px;
+    padding: 28px; border: 1px solid var(--border); border-radius: var(--radius-lg);
+    background: var(--surface); box-shadow: var(--shadow);
+}
+.flip-card-back { transform: rotateY(180deg); background: linear-gradient(135deg, var(--ice), var(--white)); }
+html[data-theme="dark"] .flip-card-back { background: linear-gradient(135deg, var(--surface-2), var(--surface)); }
+
+.flip-card-label { font: 700 11px var(--font-body); letter-spacing: .16em; text-transform: uppercase; color: var(--royal); }
+.flip-card-face p { font: 600 18px var(--font-display); color: var(--navy); line-height: 1.5; max-height: 130px; overflow-y: auto; }
+html[data-theme="dark"] .flip-card-face p { color: var(--ice); }
+.flip-card-hint { font-size: 11.5px; color: var(--muted); }
+
+.flashcard-progress { text-align: center; color: var(--muted); font-size: 13px; margin-top: 16px; }
+.flashcard-controls { display: flex; justify-content: center; gap: 12px; margin-top: 12px; }
+.flashcard-controls .ghost-btn:disabled { opacity: .4; cursor: not-allowed; }
+.text-btn { display: block; margin: 12px auto 0; border: 0; background: transparent; color: var(--royal); font: 600 13px var(--font-body); }
+
+.flashcard-saved-section { margin-top: 8px; }
+.flashcard-saved-section h2 { font: 700 16px var(--font-display); color: var(--navy); margin-bottom: 14px; }
+html[data-theme="dark"] .flashcard-saved-section h2 { color: var(--ice); }
+
+@media (max-width: 560px) {
+    .flip-card { height: 210px; }
+    .flashcard-form-row { flex-direction: column; }
+    .field-narrow { flex: 1; }
+}
+
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 1080px) {
     .stat-grid { grid-template-columns: repeat(2, 1fr); }

@@ -252,6 +252,78 @@
                 <p class="empty-state" id="bookmarksEmpty" hidden>No bookmarks yet.</p>
             </section>
 
+            <!-- ===== Flashcards panel ===== -->
+            <section class="panel-view" id="flashcardsView" hidden>
+                <div class="panel-header">
+                    <div>
+                        <h2>Flashcards</h2>
+                        <p class="panel-sub">Generate an AI flashcard deck for any topic, then study it card by card.</p>
+                    </div>
+                </div>
+
+                <form class="flashcard-form" id="flashcardForm">
+                    <div class="flashcard-form-row">
+                        <label class="field">
+                            <span>Topic</span>
+                            <input type="text" id="flashcardTopicInput" placeholder="e.g. Object-Oriented Programming">
+                        </label>
+                        <label class="field field-narrow">
+                            <span>Number of cards</span>
+                            <select id="flashcardCountInput">
+                                <option value="5">5</option>
+                                <option value="10" selected>10</option>
+                                <option value="15">15</option>
+                                <option value="20">20</option>
+                            </select>
+                        </label>
+                    </div>
+                    <button type="submit" class="primary-btn" id="flashcardGenerateBtn">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate flashcards
+                    </button>
+                </form>
+
+                <p class="flashcard-error" id="flashcardError" hidden></p>
+
+                <!-- Active deck stage: hidden until a deck is generated or opened -->
+                <div class="flashcard-stage" id="flashcardStage" hidden>
+                    <div class="flashcard-stage-header">
+                        <h3 id="flashcardDeckTitle"></h3>
+                        <button type="button" class="ghost-btn" id="saveDeckBtn">
+                            <i class="fa-regular fa-bookmark"></i> Save deck
+                        </button>
+                    </div>
+
+                    <div class="flip-card" id="flipCard">
+                        <div class="flip-card-inner">
+                            <div class="flip-card-face flip-card-front">
+                                <span class="flip-card-label">Question</span>
+                                <p id="flashcardQuestionText"></p>
+                                <span class="flip-card-hint">Click to reveal answer</span>
+                            </div>
+                            <div class="flip-card-face flip-card-back">
+                                <span class="flip-card-label">Answer</span>
+                                <p id="flashcardAnswerText"></p>
+                                <span class="flip-card-hint">Click to flip back</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p class="flashcard-progress" id="flashcardProgress">1 / 10</p>
+
+                    <div class="flashcard-controls">
+                        <button type="button" class="ghost-btn" id="prevCardBtn"><i class="fa-solid fa-arrow-left"></i> Previous</button>
+                        <button type="button" class="ghost-btn" id="nextCardBtn">Next <i class="fa-solid fa-arrow-right"></i></button>
+                    </div>
+                    <button type="button" class="text-btn" id="restartDeckBtn"><i class="fa-solid fa-rotate-left"></i> Restart deck</button>
+                </div>
+
+                <div class="flashcard-saved-section">
+                    <h2>Saved decks</h2>
+                    <div class="panel-list" id="savedDecksList"></div>
+                    <p class="empty-state" id="savedDecksEmpty">No saved decks yet — generate one above and save it.</p>
+                </div>
+            </section>
+
         </main>
 
         <!-- ----- Prompt input, fixed at bottom ----- -->
