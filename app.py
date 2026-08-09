@@ -13,6 +13,7 @@
 import os
 import re
 import json
+from datetime import date
 from flask import Flask, jsonify, request, send_file
 from flask_cors import CORS          # Allows the front-end (browser) to call this API
 from dotenv import load_dotenv       # Loads variables from a .env file
@@ -208,7 +209,218 @@ Do not include explanations outside the JSON."""
 
 
 # ---------------------------------------------------------
-# 9. Run the server
+# 9. Route: "/generate-quiz" — AI multiple-choice quiz generator
+# ---------------------------------------------------------
+@app.route("/generate-quiz", methods=["POST"])
+def generate_quiz():
+    data = request.get_json(silent=True) or {}
+
+    # ---- Validate inputs ----
+    subject = str(data.get("subject", "")).strip()
+    topic = str(data.get("topic", "")).strip()
+    material = str(data.get("material", "")).strip()
+
+    if not topic:
+        return jsonify({"error": "Please provide a topic for the quiz."}), 400
+    if len(topic) > 200:
+        return jsonify({"error": "That topic is too long. Try something shorter."}), 400
+    if len(material) > 4000:
+        material = material[:4000]  # keep the prompt a reasonable size
+
+    try:
+        count = int(data.get("count", 5))
+    except (TypeError, ValueError):
+        count = 5
+    count = max(3, min(count, 20))
+
+    difficulty = str(data.get("difficulty", "medium")).strip().lower()
+    if difficulty not in ("easy", "medium", "hard"):
+        difficulty = "medium"
+
+    # ---- Build the educational prompt ----
+    subject_clause = f" in {subject}" if subject else ""
+    material_clause = f"\nBase the questions on this study material where relevant:\n{material}\n" if material else ""
+
+    prompt = f"""You are an educational AI assistant.
+
+Generate {count} multiple-choice questions about {topic}{subject_clause} at {difficulty} difficulty, appropriate for a university student.
+{material_clause}
+Each question must contain:
+- question
+- options (exactly 4 answer choices)
+- correctAnswer (must exactly match the text of one of the options)
+- explanation (a short explanation of why that answer is correct)
+
+Return ONLY valid JSON in this format:
+
+{{
+    "questions": [
+        {{
+            "question": "...",
+            "options": ["...", "...", "...", "..."],
+            "correctAnswer": "...",
+            "explanation": "..."
+        }}
+    ]
+}}
+
+Do not return Markdown.
+Do not return ```json.
+Do not include explanations outside the JSON."""
+
+    # ---- Call Gemini and parse its response ----
+    try:
+        parsed = generate_structured_json(prompt)
+    except json.JSONDecodeError:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+    except Exception as e:
+        print(f"[/generate-quiz] Gemini error: {e}")
+        return jsonify({"error": "Something went wrong generating the quiz. Please try again."}), 500
+
+    # ---- Validate the structure of what Gemini returned ----
+    raw_questions = parsed.get("questions") if isinstance(parsed, dict) else None
+    if not isinstance(raw_questions, list):
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    questions = []
+    for q in raw_questions:
+        if not isinstance(q, dict):
+            continue
+        question_text = str(q.get("question", "")).strip()
+        options = q.get("options")
+        correct_answer = str(q.get("correctAnswer", "")).strip()
+        explanation = str(q.get("explanation", "")).strip()
+
+        if not question_text or not isinstance(options, list) or len(options) != 4:
+            continue
+        options = [str(o).strip() for o in options]
+        if not all(options) or correct_answer not in options:
+            continue
+
+        questions.append({
+            "question": question_text,
+            "options": options,
+            "correctAnswer": correct_answer,
+            "explanation": explanation
+        })
+
+    if not questions:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    return jsonify({"questions": questions[:count]})
+
+
+# ---------------------------------------------------------
+# 10. Route: "/generate-study-plan" — AI study planner
+# ---------------------------------------------------------
+@app.route("/generate-study-plan", methods=["POST"])
+def generate_study_plan():
+    data = request.get_json(silent=True) or {}
+
+    # ---- Validate inputs ----
+    subject = str(data.get("subject", "")).strip()
+    topic = str(data.get("topic", "")).strip()
+    available_time = str(data.get("availableTime", "")).strip()
+    deadline = str(data.get("deadline", "")).strip()
+    difficulty = str(data.get("difficulty", "medium")).strip().lower()
+    priority = str(data.get("priority", "medium")).strip().lower()
+
+    if not topic:
+        return jsonify({"error": "Please describe what you need to study."}), 400
+    if len(topic) > 300:
+        return jsonify({"error": "That's too long. Try a shorter description."}), 400
+
+    if difficulty not in ("easy", "medium", "hard"):
+        difficulty = "medium"
+    if priority not in ("low", "medium", "high"):
+        priority = "medium"
+
+    date_pattern = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+    if deadline and not date_pattern.match(deadline):
+        deadline = ""  # ignore anything that isn't a plain YYYY-MM-DD date
+
+    today_str = date.today().isoformat()
+    deadline_clause = deadline if deadline else "no specific deadline — spread the plan across the next 1-2 weeks"
+    time_clause = available_time if available_time else "not specified — assume short, focused daily sessions"
+    subject_clause = f" in {subject}" if subject else ""
+
+    # ---- Build the planning prompt ----
+    prompt = f"""You are an educational planning assistant.
+
+Create a structured study plan for a university student.
+
+Topic: {topic}{subject_clause}
+Today's date: {today_str}
+Deadline: {deadline_clause}
+Available study time: {time_clause}
+Difficulty: {difficulty}
+Overall priority: {priority}
+
+Break the topic into a sequence of concrete, specific study tasks (not vague labels) spaced out across the available time between today and the deadline.
+
+Each task must contain:
+- name (a specific, actionable study task)
+- date (an ISO date in YYYY-MM-DD format, on or after today)
+- duration (a short estimate like "45 minutes" or "1.5 hours")
+- priority (one of: low, medium, high)
+
+Return ONLY valid JSON in this format:
+
+{{
+    "tasks": [
+        {{
+            "name": "...",
+            "date": "YYYY-MM-DD",
+            "duration": "...",
+            "priority": "..."
+        }}
+    ]
+}}
+
+Do not return Markdown.
+Do not return ```json.
+Do not include explanations outside the JSON."""
+
+    # ---- Call Gemini and parse its response ----
+    try:
+        parsed = generate_structured_json(prompt)
+    except json.JSONDecodeError:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+    except Exception as e:
+        print(f"[/generate-study-plan] Gemini error: {e}")
+        return jsonify({"error": "Something went wrong generating the study plan. Please try again."}), 500
+
+    # ---- Validate the structure of what Gemini returned ----
+    raw_tasks = parsed.get("tasks") if isinstance(parsed, dict) else None
+    if not isinstance(raw_tasks, list):
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    tasks = []
+    for t in raw_tasks:
+        if not isinstance(t, dict):
+            continue
+        name = str(t.get("name", "")).strip()
+        task_date = str(t.get("date", "")).strip()
+        duration = str(t.get("duration", "")).strip()
+        task_priority = str(t.get("priority", "medium")).strip().lower()
+
+        if not name:
+            continue
+        if not date_pattern.match(task_date):
+            task_date = ""
+        if task_priority not in ("low", "medium", "high"):
+            task_priority = "medium"
+
+        tasks.append({"name": name, "date": task_date, "duration": duration, "priority": task_priority})
+
+    if not tasks:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    return jsonify({"tasks": tasks[:20]})
+
+
+# ---------------------------------------------------------
+# 11. Run the server
 # ---------------------------------------------------------
 # host="0.0.0.0" makes the server reachable from other devices
 # on the network, not just localhost.

@@ -27,6 +27,8 @@ const historyView = document.getElementById("historyView");
 const notesView = document.getElementById("notesView");
 const bookmarksView = document.getElementById("bookmarksView");
 const flashcardsView = document.getElementById("flashcardsView");
+const quizView = document.getElementById("quizView");
+const plannerView = document.getElementById("plannerView");
 const responseEl = document.getElementById("response");
 
 const messageInput = document.getElementById("messageInput");
@@ -61,7 +63,9 @@ const STORAGE_KEYS = {
     activeId: "studyai-active-conversation-id",
     notes: "studyai-notes",
     bookmarks: "studyai-bookmarks",
-    flashcardDecks: "studyai-flashcard-decks"
+    flashcardDecks: "studyai-flashcard-decks",
+    quizHistory: "studyai-quiz-history",
+    plannerTasks: "studyai-planner-tasks"
 };
 
 // ---------------------------------------------------------
@@ -140,7 +144,9 @@ const views = {
     history: historyView,
     notes: notesView,
     bookmarks: bookmarksView,
-    flashcards: flashcardsView
+    flashcards: flashcardsView,
+    quiz: quizView,
+    planner: plannerView
 };
 
 function showView(name) {
@@ -154,8 +160,6 @@ function showView(name) {
 // ---------------------------------------------------------
 const viewConfigs = {
     dashboard: { placeholder: "Ask anything about programming, university courses, assignments, mathematics, or upload your study material..." },
-    quiz: { placeholder: "Tell me a topic to quiz you on...", intro: "The dedicated quiz builder is coming soon — for now, ask me to quiz you here in chat." },
-    planner: { placeholder: "Tell me what you need to study and by when...", intro: "The study planner is coming soon — for now, tell me your subjects and deadlines here in chat." },
     settings: { placeholder: "Tell me how you want the assistant to behave...", intro: "Settings are coming soon." },
     help: { placeholder: "Ask for help with the app or your studies...", intro: "Use the sidebar to reach chat history, saved notes, and bookmarks. Everything is stored on this device. For anything else, just ask me here." },
     profile: { placeholder: "Ask anything about your studies...", intro: "Your profile settings are coming soon." }
@@ -227,6 +231,8 @@ function handleNavClick(viewName, target) {
     if (viewName === "notes") { showView("notes"); renderNotes(); return; }
     if (viewName === "bookmarks") { showView("bookmarks"); renderBookmarks(); return; }
     if (viewName === "flashcards") { showView("flashcards"); renderSavedDecks(); return; }
+    if (viewName === "quiz") { showView("quiz"); return; }
+    if (viewName === "planner") { showView("planner"); renderTasks(); return; }
 
     // Phase 2+ features: land in chat with a short explanatory note
     const config = viewConfigs[viewName] || viewConfigs.dashboard;
@@ -819,7 +825,445 @@ flashcardForm.addEventListener("submit", async (e) => {
 renderSavedDecks();
 
 // ---------------------------------------------------------
-// 19. Initial state: restore the last active conversation if
+// 19. Quiz Generator
+// ---------------------------------------------------------
+const quizForm = document.getElementById("quizForm");
+const quizSubjectInput = document.getElementById("quizSubjectInput");
+const quizTopicInput = document.getElementById("quizTopicInput");
+const quizCountInput = document.getElementById("quizCountInput");
+const quizDifficultyInput = document.getElementById("quizDifficultyInput");
+const quizMaterialInput = document.getElementById("quizMaterialInput");
+const quizGenerateBtn = document.getElementById("quizGenerateBtn");
+const quizError = document.getElementById("quizError");
+
+const quizStage = document.getElementById("quizStage");
+const quizStageTitle = document.getElementById("quizStageTitle");
+const quizProgress = document.getElementById("quizProgress");
+const quizQuestionText = document.getElementById("quizQuestionText");
+const quizOptions = document.getElementById("quizOptions");
+const quizPrevBtn = document.getElementById("quizPrevBtn");
+const quizNextBtn = document.getElementById("quizNextBtn");
+const quizSubmitBtn = document.getElementById("quizSubmitBtn");
+
+const quizResults = document.getElementById("quizResults");
+const quizScoreValue = document.getElementById("quizScoreValue");
+const quizScoreLabel = document.getElementById("quizScoreLabel");
+const quizReviewList = document.getElementById("quizReviewList");
+const quizRetakeBtn = document.getElementById("quizRetakeBtn");
+const quizNewBtn = document.getElementById("quizNewBtn");
+
+const QUIZ_OPTION_LETTERS = ["A", "B", "C", "D"];
+
+// currentQuiz: { subject, topic, difficulty, questions: [{question, options, correctAnswer, explanation}] }
+let currentQuiz = null;
+let quizAnswers = [];       // parallel array: selected option index per question, or null
+let quizCurrentIndex = 0;
+
+function showQuizError(message) {
+    quizError.textContent = message;
+    quizError.hidden = false;
+}
+function hideQuizError() { quizError.hidden = true; }
+
+function startQuiz(quiz) {
+    currentQuiz = quiz;
+    quizAnswers = new Array(quiz.questions.length).fill(null);
+    quizCurrentIndex = 0;
+
+    quizStageTitle.textContent = quiz.subject ? `${quiz.subject} \u2014 ${quiz.topic}` : quiz.topic;
+    quizResults.hidden = true;
+    quizStage.hidden = false;
+    renderQuizQuestion();
+    quizStage.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function renderQuizQuestion() {
+    if (!currentQuiz) return;
+    const q = currentQuiz.questions[quizCurrentIndex];
+    const total = currentQuiz.questions.length;
+
+    quizProgress.textContent = `Question ${quizCurrentIndex + 1} of ${total}`;
+    quizQuestionText.textContent = q.question;
+
+    quizOptions.innerHTML = q.options.map((opt, i) => `
+        <button type="button" class="quiz-option ${quizAnswers[quizCurrentIndex] === i ? "selected" : ""}" data-index="${i}">
+            <span class="quiz-option-letter">${QUIZ_OPTION_LETTERS[i] || i + 1}</span>
+            <span>${escapeHtml(opt)}</span>
+        </button>
+    `).join("");
+
+    quizOptions.querySelectorAll(".quiz-option").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            quizAnswers[quizCurrentIndex] = parseInt(btn.dataset.index, 10);
+            renderQuizQuestion();
+        });
+    });
+
+    quizPrevBtn.disabled = quizCurrentIndex === 0;
+    const isLast = quizCurrentIndex === total - 1;
+    quizNextBtn.hidden = isLast;
+    quizSubmitBtn.hidden = !isLast;
+}
+
+quizPrevBtn.addEventListener("click", () => {
+    if (quizCurrentIndex > 0) { quizCurrentIndex -= 1; renderQuizQuestion(); }
+});
+quizNextBtn.addEventListener("click", () => {
+    if (currentQuiz && quizCurrentIndex < currentQuiz.questions.length - 1) { quizCurrentIndex += 1; renderQuizQuestion(); }
+});
+
+function submitQuiz() {
+    if (!currentQuiz) return;
+
+    let correctCount = 0;
+    const total = currentQuiz.questions.length;
+
+    const reviewHtml = currentQuiz.questions.map((q, i) => {
+        const selectedIdx = quizAnswers[i];
+        const selectedText = selectedIdx !== null ? q.options[selectedIdx] : null;
+        const isCorrect = selectedText === q.correctAnswer;
+        if (isCorrect) correctCount += 1;
+
+        return `
+            <div class="list-card quiz-review-item ${isCorrect ? "correct" : "incorrect"}">
+                <div class="list-card-main">
+                    <p class="quiz-review-q">${i + 1}. ${escapeHtml(q.question)}</p>
+                    <p class="quiz-review-answer">Your answer: ${escapeHtml(selectedText || "No answer")}</p>
+                    ${isCorrect ? "" : `<p class="quiz-review-answer">Correct answer: ${escapeHtml(q.correctAnswer)}</p>`}
+                    ${q.explanation ? `<p class="quiz-review-explanation">${escapeHtml(q.explanation)}</p>` : ""}
+                </div>
+            </div>
+        `;
+    }).join("");
+
+    const percent = Math.round((correctCount / total) * 100);
+    quizScoreValue.textContent = `${percent}%`;
+    quizScoreLabel.textContent = `${correctCount} / ${total} correct`;
+    quizReviewList.innerHTML = reviewHtml;
+
+    quizStage.hidden = true;
+    quizResults.hidden = false;
+    quizResults.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    // Record the completion so future dashboard stats can use real data
+    const history = loadList(STORAGE_KEYS.quizHistory);
+    history.unshift({
+        id: String(Date.now()),
+        subject: currentQuiz.subject,
+        topic: currentQuiz.topic,
+        score: correctCount,
+        total,
+        percent,
+        completedAt: Date.now()
+    });
+    saveList(STORAGE_KEYS.quizHistory, history);
+}
+quizSubmitBtn.addEventListener("click", submitQuiz);
+
+quizRetakeBtn.addEventListener("click", () => {
+    if (!currentQuiz) return;
+    quizAnswers = new Array(currentQuiz.questions.length).fill(null);
+    quizCurrentIndex = 0;
+    quizResults.hidden = true;
+    quizStage.hidden = false;
+    renderQuizQuestion();
+});
+
+quizNewBtn.addEventListener("click", () => {
+    currentQuiz = null;
+    quizResults.hidden = true;
+    quizStage.hidden = true;
+    quizForm.reset();
+    quizTopicInput.focus();
+});
+
+quizForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideQuizError();
+
+    const subject = quizSubjectInput.value.trim();
+    const topic = quizTopicInput.value.trim();
+    const count = parseInt(quizCountInput.value, 10) || 5;
+    const difficulty = quizDifficultyInput.value;
+    const material = quizMaterialInput.value.trim();
+
+    if (!topic) {
+        showQuizError("Please enter a topic for the quiz.");
+        quizTopicInput.focus();
+        return;
+    }
+
+    quizGenerateBtn.disabled = true;
+    const originalBtnHtml = quizGenerateBtn.innerHTML;
+    quizGenerateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating quiz...';
+    quizStage.hidden = true;
+    quizResults.hidden = true;
+
+    try {
+        const res = await fetch("/generate-quiz", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subject, topic, count, difficulty, material })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !Array.isArray(data.questions) || data.questions.length === 0) {
+            showQuizError(data.error || "Couldn't generate a quiz for that topic. Please try again.");
+        } else {
+            startQuiz({ subject, topic, difficulty, questions: data.questions });
+        }
+    } catch (error) {
+        console.error(error);
+        showQuizError("Unable to connect to the Flask server.");
+    }
+
+    quizGenerateBtn.disabled = false;
+    quizGenerateBtn.innerHTML = originalBtnHtml;
+});
+
+// ---------------------------------------------------------
+// 20. Study Planner
+// ---------------------------------------------------------
+const plannerGenerateForm = document.getElementById("plannerGenerateForm");
+const plannerSubjectInput = document.getElementById("plannerSubjectInput");
+const plannerTopicInput = document.getElementById("plannerTopicInput");
+const plannerDeadlineInput = document.getElementById("plannerDeadlineInput");
+const plannerTimeInput = document.getElementById("plannerTimeInput");
+const plannerDifficultyInput = document.getElementById("plannerDifficultyInput");
+const plannerPriorityInput = document.getElementById("plannerPriorityInput");
+const plannerGenerateBtn = document.getElementById("plannerGenerateBtn");
+const plannerError = document.getElementById("plannerError");
+
+const taskForm = document.getElementById("taskForm");
+const taskNameInput = document.getElementById("taskNameInput");
+const taskSubjectInput = document.getElementById("taskSubjectInput");
+const taskDateInput = document.getElementById("taskDateInput");
+const taskDurationInput = document.getElementById("taskDurationInput");
+const taskPriorityInput = document.getElementById("taskPriorityInput");
+const taskSubmitBtn = document.getElementById("taskSubmitBtn");
+const cancelTaskEditBtn = document.getElementById("cancelTaskEditBtn");
+
+const upcomingTabBtn = document.getElementById("upcomingTabBtn");
+const completedTabBtn = document.getElementById("completedTabBtn");
+const upcomingCount = document.getElementById("upcomingCount");
+const completedCount = document.getElementById("completedCount");
+const taskList = document.getElementById("taskList");
+const taskEmpty = document.getElementById("taskEmpty");
+
+let editingTaskId = null;
+let plannerActiveTab = "upcoming";
+
+function loadTasks() { return loadList(STORAGE_KEYS.plannerTasks); }
+function saveTasksList(list) { saveList(STORAGE_KEYS.plannerTasks, list); }
+
+function showPlannerError(message) {
+    plannerError.textContent = message;
+    plannerError.hidden = false;
+}
+function hidePlannerError() { plannerError.hidden = true; }
+
+function formatTaskDate(iso) {
+    if (!iso) return "";
+    const d = new Date(`${iso}T00:00:00`);
+    if (Number.isNaN(d.getTime())) return "";
+    return d.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
+function switchPlannerTab(tab) {
+    plannerActiveTab = tab;
+    upcomingTabBtn.classList.toggle("active", tab === "upcoming");
+    completedTabBtn.classList.toggle("active", tab === "completed");
+    renderTasks();
+}
+upcomingTabBtn.addEventListener("click", () => switchPlannerTab("upcoming"));
+completedTabBtn.addEventListener("click", () => switchPlannerTab("completed"));
+
+function renderTaskCard(t) {
+    const dateLabel = formatTaskDate(t.date);
+    const tags = [
+        t.subject ? `<span class="task-tag">${escapeHtml(t.subject)}</span>` : "",
+        dateLabel ? `<span class="task-tag">${dateLabel}</span>` : "",
+        t.duration ? `<span class="task-tag">${escapeHtml(t.duration)}</span>` : "",
+        `<span class="task-tag priority-${t.priority}">${t.priority}</span>`
+    ].join("");
+
+    return `
+        <div class="list-card task-card ${t.completed ? "completed" : ""}">
+            <input type="checkbox" class="task-checkbox" data-id="${t.id}" ${t.completed ? "checked" : ""} aria-label="Mark task complete">
+            <div class="list-card-main">
+                <p class="list-card-title">${escapeHtml(t.name)}</p>
+                <div class="task-meta-row">${tags}</div>
+            </div>
+            <div class="list-card-actions">
+                <button class="icon-btn-sm edit-task" data-id="${t.id}" title="Edit"><i class="fa-solid fa-pen"></i></button>
+                <button class="icon-btn-sm delete-task" data-id="${t.id}" title="Delete"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>
+    `;
+}
+
+function renderTasks() {
+    const tasks = loadTasks();
+    const upcoming = tasks.filter((t) => !t.completed).sort((a, b) => {
+        if (!a.date && !b.date) return b.createdAt - a.createdAt;
+        if (!a.date) return 1;
+        if (!b.date) return -1;
+        return a.date.localeCompare(b.date);
+    });
+    const completed = tasks.filter((t) => t.completed).sort((a, b) => (b.completedAt || b.createdAt) - (a.completedAt || a.createdAt));
+
+    upcomingCount.textContent = upcoming.length;
+    completedCount.textContent = completed.length;
+
+    const activeList = plannerActiveTab === "upcoming" ? upcoming : completed;
+    taskEmpty.hidden = activeList.length !== 0;
+    taskEmpty.textContent = plannerActiveTab === "upcoming"
+        ? "No upcoming tasks — generate a plan above or add one manually."
+        : "No completed tasks yet.";
+
+    taskList.innerHTML = activeList.map(renderTaskCard).join("");
+
+    taskList.querySelectorAll(".task-checkbox").forEach((cb) => {
+        cb.addEventListener("change", () => toggleTaskComplete(cb.dataset.id, cb.checked));
+    });
+    taskList.querySelectorAll(".edit-task").forEach((btn) => {
+        btn.addEventListener("click", () => editTask(btn.dataset.id));
+    });
+    taskList.querySelectorAll(".delete-task").forEach((btn) => {
+        btn.addEventListener("click", () => deleteTask(btn.dataset.id));
+    });
+}
+
+function toggleTaskComplete(id, completed) {
+    const tasks = loadTasks();
+    const idx = tasks.findIndex((t) => t.id === id);
+    if (idx >= 0) {
+        tasks[idx].completed = completed;
+        tasks[idx].completedAt = completed ? Date.now() : null;
+        saveTasksList(tasks);
+    }
+    renderTasks();
+}
+
+function editTask(id) {
+    const task = loadTasks().find((t) => t.id === id);
+    if (!task) return;
+    editingTaskId = id;
+    taskNameInput.value = task.name;
+    taskSubjectInput.value = task.subject || "";
+    taskDateInput.value = task.date || "";
+    taskDurationInput.value = task.duration || "";
+    taskPriorityInput.value = task.priority || "medium";
+    taskSubmitBtn.innerHTML = '<i class="fa-solid fa-check"></i> Update task';
+    cancelTaskEditBtn.hidden = false;
+    taskNameInput.focus();
+    taskForm.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+function resetTaskForm() {
+    editingTaskId = null;
+    taskForm.reset();
+    taskPriorityInput.value = "medium";
+    taskSubmitBtn.innerHTML = '<i class="fa-solid fa-plus"></i> Add task';
+    cancelTaskEditBtn.hidden = true;
+}
+
+function deleteTask(id) {
+    if (!confirm("Delete this task?")) return;
+    saveTasksList(loadTasks().filter((t) => t.id !== id));
+    if (editingTaskId === id) resetTaskForm();
+    renderTasks();
+}
+
+taskForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    const name = taskNameInput.value.trim();
+    if (!name) { taskNameInput.focus(); return; }
+
+    const subject = taskSubjectInput.value.trim();
+    const date = taskDateInput.value;
+    const duration = taskDurationInput.value.trim();
+    const priority = taskPriorityInput.value || "medium";
+
+    const tasks = loadTasks();
+    if (editingTaskId) {
+        const idx = tasks.findIndex((t) => t.id === editingTaskId);
+        if (idx >= 0) tasks[idx] = { ...tasks[idx], name, subject, date, duration, priority };
+    } else {
+        const now = Date.now();
+        tasks.unshift({ id: String(now), name, subject, date, duration, priority, completed: false, createdAt: now, completedAt: null });
+    }
+    saveTasksList(tasks);
+    resetTaskForm();
+    renderTasks();
+});
+cancelTaskEditBtn.addEventListener("click", resetTaskForm);
+
+function addTasksFromPlan(generatedTasks, fallbackSubject) {
+    const existing = loadTasks();
+    const now = Date.now();
+    const newTasks = generatedTasks.map((t, i) => ({
+        id: String(now + i),
+        name: t.name,
+        subject: t.subject || fallbackSubject || "",
+        date: t.date || "",
+        duration: t.duration || "",
+        priority: t.priority || "medium",
+        completed: false,
+        createdAt: now,
+        completedAt: null
+    }));
+    saveTasksList([...newTasks, ...existing]);
+}
+
+plannerGenerateForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hidePlannerError();
+
+    const subject = plannerSubjectInput.value.trim();
+    const topic = plannerTopicInput.value.trim();
+    const deadline = plannerDeadlineInput.value;
+    const availableTime = plannerTimeInput.value.trim();
+    const difficulty = plannerDifficultyInput.value;
+    const priority = plannerPriorityInput.value;
+
+    if (!topic) {
+        showPlannerError("Please describe what you need to study.");
+        plannerTopicInput.focus();
+        return;
+    }
+
+    plannerGenerateBtn.disabled = true;
+    const originalBtnHtml = plannerGenerateBtn.innerHTML;
+    plannerGenerateBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Generating plan...';
+
+    try {
+        const res = await fetch("/generate-study-plan", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subject, topic, deadline, availableTime, difficulty, priority })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !Array.isArray(data.tasks) || data.tasks.length === 0) {
+            showPlannerError(data.error || "Couldn't generate a study plan for that. Please try again.");
+        } else {
+            addTasksFromPlan(data.tasks, subject);
+            switchPlannerTab("upcoming");
+        }
+    } catch (error) {
+        console.error(error);
+        showPlannerError("Unable to connect to the Flask server.");
+    }
+
+    plannerGenerateBtn.disabled = false;
+    plannerGenerateBtn.innerHTML = originalBtnHtml;
+});
+
+renderTasks();
+
+// ---------------------------------------------------------
+// 21. Initial state: restore the last active conversation if
 //     one exists, otherwise show the welcome dashboard
 // ---------------------------------------------------------
 (function init() {

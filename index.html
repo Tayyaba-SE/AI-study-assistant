@@ -324,6 +324,189 @@
                 </div>
             </section>
 
+            <!-- ===== Quiz Generator panel ===== -->
+            <section class="panel-view" id="quizView" hidden>
+                <div class="panel-header">
+                    <div>
+                        <h2>Quiz generator</h2>
+                        <p class="panel-sub">Generate an AI multiple-choice quiz, take it, and see where you stand.</p>
+                    </div>
+                </div>
+
+                <form class="flashcard-form" id="quizForm">
+                    <div class="flashcard-form-row">
+                        <label class="field">
+                            <span>Subject (optional)</span>
+                            <input type="text" id="quizSubjectInput" placeholder="e.g. Computer Science">
+                        </label>
+                        <label class="field">
+                            <span>Topic</span>
+                            <input type="text" id="quizTopicInput" placeholder="e.g. Binary search trees">
+                        </label>
+                    </div>
+                    <div class="flashcard-form-row">
+                        <label class="field field-narrow">
+                            <span>Number of questions</span>
+                            <select id="quizCountInput">
+                                <option value="5" selected>5</option>
+                                <option value="10">10</option>
+                                <option value="15">15</option>
+                            </select>
+                        </label>
+                        <label class="field field-narrow">
+                            <span>Difficulty</span>
+                            <select id="quizDifficultyInput">
+                                <option value="easy">Easy</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </label>
+                    </div>
+                    <label class="field">
+                        <span>Study material (optional)</span>
+                        <textarea id="quizMaterialInput" rows="3" placeholder="Paste notes or context to base the questions on..."></textarea>
+                    </label>
+                    <button type="submit" class="primary-btn" id="quizGenerateBtn">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate quiz
+                    </button>
+                </form>
+
+                <p class="flashcard-error" id="quizError" hidden></p>
+
+                <!-- Active quiz: one question at a time -->
+                <div class="quiz-stage" id="quizStage" hidden>
+                    <div class="quiz-stage-header">
+                        <h3 id="quizStageTitle"></h3>
+                        <p class="quiz-progress" id="quizProgress">Question 1 of 5</p>
+                    </div>
+                    <p class="quiz-question-text" id="quizQuestionText"></p>
+                    <div class="quiz-options" id="quizOptions"></div>
+                    <div class="flashcard-controls">
+                        <button type="button" class="ghost-btn" id="quizPrevBtn"><i class="fa-solid fa-arrow-left"></i> Previous</button>
+                        <button type="button" class="primary-btn" id="quizNextBtn">Next <i class="fa-solid fa-arrow-right"></i></button>
+                        <button type="button" class="primary-btn" id="quizSubmitBtn" hidden>Submit quiz</button>
+                    </div>
+                </div>
+
+                <!-- Results: score + per-question review -->
+                <div class="quiz-results" id="quizResults" hidden>
+                    <div class="quiz-score-card">
+                        <p class="quiz-score-value" id="quizScoreValue">0%</p>
+                        <p class="quiz-score-label" id="quizScoreLabel">0 / 0 correct</p>
+                    </div>
+                    <div class="panel-list" id="quizReviewList"></div>
+                    <div class="quiz-results-actions">
+                        <button type="button" class="ghost-btn" id="quizRetakeBtn"><i class="fa-solid fa-rotate-left"></i> Retake quiz</button>
+                        <button type="button" class="primary-btn" id="quizNewBtn"><i class="fa-solid fa-plus"></i> New quiz</button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- ===== Study Planner panel ===== -->
+            <section class="panel-view" id="plannerView" hidden>
+                <div class="panel-header">
+                    <div>
+                        <h2>Study planner</h2>
+                        <p class="panel-sub">Generate an AI study plan, or add and track your own tasks.</p>
+                    </div>
+                </div>
+
+                <h3 class="planner-subheading planner-subheading-first">Generate with AI</h3>
+                <form class="flashcard-form" id="plannerGenerateForm">
+                    <div class="flashcard-form-row">
+                        <label class="field">
+                            <span>Subject (optional)</span>
+                            <input type="text" id="plannerSubjectInput" placeholder="e.g. Computer Science">
+                        </label>
+                        <label class="field">
+                            <span>What do you need to study?</span>
+                            <input type="text" id="plannerTopicInput" placeholder="e.g. Prepare for the data structures midterm">
+                        </label>
+                    </div>
+                    <div class="flashcard-form-row">
+                        <label class="field field-narrow">
+                            <span>Deadline (optional)</span>
+                            <input type="date" id="plannerDeadlineInput">
+                        </label>
+                        <label class="field">
+                            <span>Available study time (optional)</span>
+                            <input type="text" id="plannerTimeInput" placeholder="e.g. 1 hour a day">
+                        </label>
+                    </div>
+                    <div class="flashcard-form-row">
+                        <label class="field field-narrow">
+                            <span>Difficulty</span>
+                            <select id="plannerDifficultyInput">
+                                <option value="easy">Easy</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="hard">Hard</option>
+                            </select>
+                        </label>
+                        <label class="field field-narrow">
+                            <span>Priority</span>
+                            <select id="plannerPriorityInput">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </label>
+                    </div>
+                    <button type="submit" class="primary-btn" id="plannerGenerateBtn">
+                        <i class="fa-solid fa-wand-magic-sparkles"></i> Generate study plan
+                    </button>
+                </form>
+
+                <p class="flashcard-error" id="plannerError" hidden></p>
+
+                <h3 class="planner-subheading">Add a task manually</h3>
+                <form class="note-form" id="taskForm">
+                    <div class="flashcard-form-row">
+                        <label class="field">
+                            <span>Task name</span>
+                            <input type="text" id="taskNameInput" placeholder="e.g. Review chapter 4 notes">
+                        </label>
+                        <label class="field">
+                            <span>Subject (optional)</span>
+                            <input type="text" id="taskSubjectInput" placeholder="e.g. Biology">
+                        </label>
+                    </div>
+                    <div class="flashcard-form-row">
+                        <label class="field field-narrow">
+                            <span>Date (optional)</span>
+                            <input type="date" id="taskDateInput">
+                        </label>
+                        <label class="field field-narrow">
+                            <span>Duration (optional)</span>
+                            <input type="text" id="taskDurationInput" placeholder="e.g. 45 minutes">
+                        </label>
+                        <label class="field field-narrow">
+                            <span>Priority</span>
+                            <select id="taskPriorityInput">
+                                <option value="low">Low</option>
+                                <option value="medium" selected>Medium</option>
+                                <option value="high">High</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div class="note-form-actions">
+                        <button type="button" class="ghost-btn" id="cancelTaskEditBtn" hidden>Cancel edit</button>
+                        <button type="submit" class="primary-btn" id="taskSubmitBtn"><i class="fa-solid fa-plus"></i> Add task</button>
+                    </div>
+                </form>
+
+                <div class="planner-tabs">
+                    <button type="button" class="planner-tab active" id="upcomingTabBtn" data-tab="upcoming">
+                        Upcoming <span class="tab-count" id="upcomingCount">0</span>
+                    </button>
+                    <button type="button" class="planner-tab" id="completedTabBtn" data-tab="completed">
+                        Completed <span class="tab-count" id="completedCount">0</span>
+                    </button>
+                </div>
+
+                <div class="panel-list" id="taskList"></div>
+                <p class="empty-state" id="taskEmpty" hidden>No upcoming tasks — generate a plan above or add one manually.</p>
+            </section>
+
         </main>
 
         <!-- ----- Prompt input, fixed at bottom ----- -->
