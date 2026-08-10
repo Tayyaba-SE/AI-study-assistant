@@ -29,6 +29,7 @@ const bookmarksView = document.getElementById("bookmarksView");
 const flashcardsView = document.getElementById("flashcardsView");
 const quizView = document.getElementById("quizView");
 const plannerView = document.getElementById("plannerView");
+const toolsView = document.getElementById("toolsView");
 const responseEl = document.getElementById("response");
 
 const messageInput = document.getElementById("messageInput");
@@ -146,7 +147,8 @@ const views = {
     bookmarks: bookmarksView,
     flashcards: flashcardsView,
     quiz: quizView,
-    planner: plannerView
+    planner: plannerView,
+    tools: toolsView
 };
 
 function showView(name) {
@@ -264,6 +266,20 @@ newChatBtn.addEventListener("click", () => {
 // ---------------------------------------------------------
 quickPromptButtons.forEach((btn) => {
     btn.addEventListener("click", () => {
+        const targetView = btn.dataset.view;
+        const targetTool = btn.dataset.tool;
+
+        if (targetView) {
+            handleNavClick(targetView, document.querySelector(`.nav-item[data-view="${targetView}"]`));
+            return;
+        }
+        if (targetTool) {
+            setActiveNav(null);
+            showView("tools");
+            switchTool(targetTool);
+            return;
+        }
+
         const prompt = btn.dataset.prompt || "";
         messageInput.value = prompt;
         messageInput.focus();
@@ -1263,7 +1279,268 @@ plannerGenerateForm.addEventListener("submit", async (e) => {
 renderTasks();
 
 // ---------------------------------------------------------
-// 21. Initial state: restore the last active conversation if
+// 21. AI Study Tools (Concept Explainer, Code Debugger,
+//     Math Solver, Assignment Helper)
+// ---------------------------------------------------------
+const toolsTabs = document.querySelectorAll("#toolsTabs .planner-tab");
+const toolPanes = {
+    explain: document.getElementById("tool-explain"),
+    debug: document.getElementById("tool-debug"),
+    math: document.getElementById("tool-math"),
+    assignment: document.getElementById("tool-assignment")
+};
+
+function switchTool(tool) {
+    if (!toolPanes[tool]) return;
+    toolsTabs.forEach((t) => t.classList.toggle("active", t.dataset.tool === tool));
+    Object.entries(toolPanes).forEach(([key, el]) => { el.hidden = key !== tool; });
+}
+toolsTabs.forEach((t) => t.addEventListener("click", () => switchTool(t.dataset.tool)));
+
+function showToolError(el, message) {
+    el.textContent = message;
+    el.hidden = false;
+}
+function hideToolError(el) { el.hidden = true; }
+
+// Generic renderer for tools whose output is just a set of
+// labeled text/list sections (Concept Explainer, Assignment Helper)
+function renderToolSections(container, sections) {
+    const visible = sections.filter((s) => (Array.isArray(s.content) ? s.content.length > 0 : !!(s.content && s.content.trim())));
+    container.innerHTML = visible.map((s) => `
+        <div class="tool-result-section">
+            <h4>${escapeHtml(s.label)}</h4>
+            ${Array.isArray(s.content)
+                ? `<ul>${s.content.map((item) => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`
+                : `<p>${escapeHtml(s.content).replace(/\n/g, "<br>")}</p>`}
+        </div>
+    `).join("");
+    container.hidden = false;
+    container.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+// ----- A. Concept Explainer -----
+const explainForm = document.getElementById("explainForm");
+const explainConceptInput = document.getElementById("explainConceptInput");
+const explainBtn = document.getElementById("explainBtn");
+const explainError = document.getElementById("explainError");
+const explainResult = document.getElementById("explainResult");
+
+explainForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideToolError(explainError);
+    const concept = explainConceptInput.value.trim();
+    if (!concept) { showToolError(explainError, "Please enter a concept to explain."); explainConceptInput.focus(); return; }
+
+    explainBtn.disabled = true;
+    const original = explainBtn.innerHTML;
+    explainBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Explaining...';
+    explainResult.hidden = true;
+
+    try {
+        const res = await fetch("/explain-concept", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ concept })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.simpleExplanation) {
+            showToolError(explainError, data.error || "Couldn't generate an explanation. Please try again.");
+        } else {
+            renderToolSections(explainResult, [
+                { label: "Simple explanation", content: data.simpleExplanation },
+                { label: "Detailed explanation", content: data.detailedExplanation },
+                { label: "Example", content: data.example },
+                { label: "Real-world analogy", content: data.analogy },
+                { label: "Key points", content: data.keyPoints || [] }
+            ]);
+        }
+    } catch (error) {
+        console.error(error);
+        showToolError(explainError, "Unable to connect to the Flask server.");
+    }
+
+    explainBtn.disabled = false;
+    explainBtn.innerHTML = original;
+});
+
+// ----- B. Code Debugger -----
+const debugForm = document.getElementById("debugForm");
+const debugLanguageInput = document.getElementById("debugLanguageInput");
+const debugCodeInput = document.getElementById("debugCodeInput");
+const debugErrorInput = document.getElementById("debugErrorInput");
+const debugBtn = document.getElementById("debugBtn");
+const debugError = document.getElementById("debugError");
+const debugResult = document.getElementById("debugResult");
+
+function renderDebugResult(data) {
+    const suggestionsHtml = (data.suggestions && data.suggestions.length)
+        ? `<div class="tool-result-section"><h4>Suggestions</h4><ul>${data.suggestions.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ul></div>`
+        : "";
+
+    debugResult.innerHTML = `
+        <div class="tool-result-section"><h4>Problem</h4><p>${escapeHtml(data.problem)}</p></div>
+        ${data.causeExplanation ? `<div class="tool-result-section"><h4>Why this happens</h4><p>${escapeHtml(data.causeExplanation)}</p></div>` : ""}
+        <div class="tool-result-section">
+            <div class="tool-code-header">
+                <h4>Corrected code</h4>
+                <button type="button" class="icon-btn-sm" id="copyDebugCodeBtn" title="Copy code"><i class="fa-regular fa-copy"></i></button>
+            </div>
+            <pre class="tool-code-block"><code>${escapeHtml(data.correctedCode)}</code></pre>
+        </div>
+        ${data.correctionExplanation ? `<div class="tool-result-section"><h4>What changed</h4><p>${escapeHtml(data.correctionExplanation)}</p></div>` : ""}
+        ${suggestionsHtml}
+    `;
+    debugResult.hidden = false;
+
+    const copyBtn = document.getElementById("copyDebugCodeBtn");
+    if (copyBtn) copyBtn.addEventListener("click", () => navigator.clipboard.writeText(data.correctedCode).catch(() => {}));
+
+    debugResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+debugForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideToolError(debugError);
+    const language = debugLanguageInput.value;
+    const code = debugCodeInput.value.trim();
+    const errorMessage = debugErrorInput.value.trim();
+    if (!code) { showToolError(debugError, "Please paste in some code to debug."); debugCodeInput.focus(); return; }
+
+    debugBtn.disabled = true;
+    const original = debugBtn.innerHTML;
+    debugBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Debugging...';
+    debugResult.hidden = true;
+
+    try {
+        const res = await fetch("/debug-code", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ language, code, error: errorMessage })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.problem || !data.correctedCode) {
+            showToolError(debugError, data.error || "Couldn't debug that code. Please try again.");
+        } else {
+            renderDebugResult(data);
+        }
+    } catch (error) {
+        console.error(error);
+        showToolError(debugError, "Unable to connect to the Flask server.");
+    }
+
+    debugBtn.disabled = false;
+    debugBtn.innerHTML = original;
+});
+
+// ----- C. Mathematics Solver -----
+const mathForm = document.getElementById("mathForm");
+const mathProblemInput = document.getElementById("mathProblemInput");
+const mathBtn = document.getElementById("mathBtn");
+const mathError = document.getElementById("mathError");
+const mathResult = document.getElementById("mathResult");
+
+function renderMathResult(data) {
+    mathResult.innerHTML = `
+        <div class="tool-result-section">
+            <h4>Step-by-step solution</h4>
+            <ol class="tool-steps">${data.steps.map((s) => `<li>${escapeHtml(s)}</li>`).join("")}</ol>
+        </div>
+        <div class="tool-answer-card">
+            <span class="tool-answer-label">Final answer</span>
+            <p>${escapeHtml(data.finalAnswer)}</p>
+        </div>
+        ${data.explanation ? `<div class="tool-result-section"><h4>Explanation</h4><p>${escapeHtml(data.explanation)}</p></div>` : ""}
+    `;
+    mathResult.hidden = false;
+    mathResult.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+
+mathForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideToolError(mathError);
+    const problem = mathProblemInput.value.trim();
+    if (!problem) { showToolError(mathError, "Please enter a problem to solve."); mathProblemInput.focus(); return; }
+
+    mathBtn.disabled = true;
+    const original = mathBtn.innerHTML;
+    mathBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Solving...';
+    mathResult.hidden = true;
+
+    try {
+        const res = await fetch("/solve-math", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ problem })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !Array.isArray(data.steps) || data.steps.length === 0 || !data.finalAnswer) {
+            showToolError(mathError, data.error || "Couldn't solve that problem. Please try again.");
+        } else {
+            renderMathResult(data);
+        }
+    } catch (error) {
+        console.error(error);
+        showToolError(mathError, "Unable to connect to the Flask server.");
+    }
+
+    mathBtn.disabled = false;
+    mathBtn.innerHTML = original;
+});
+
+// ----- D. Assignment Helper -----
+const assignmentForm = document.getElementById("assignmentForm");
+const assignmentSubjectInput = document.getElementById("assignmentSubjectInput");
+const assignmentTextInput = document.getElementById("assignmentTextInput");
+const assignmentBtn = document.getElementById("assignmentBtn");
+const assignmentError = document.getElementById("assignmentError");
+const assignmentResult = document.getElementById("assignmentResult");
+
+assignmentForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    hideToolError(assignmentError);
+    const subject = assignmentSubjectInput.value.trim();
+    const assignment = assignmentTextInput.value.trim();
+    if (!assignment) { showToolError(assignmentError, "Please describe the assignment."); assignmentTextInput.focus(); return; }
+
+    assignmentBtn.disabled = true;
+    const original = assignmentBtn.innerHTML;
+    assignmentBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Thinking...';
+    assignmentResult.hidden = true;
+
+    try {
+        const res = await fetch("/assignment-help", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ subject, assignment })
+        });
+        const data = await res.json();
+
+        if (!res.ok || !data.breakdown) {
+            showToolError(assignmentError, data.error || "Couldn't generate guidance for that. Please try again.");
+        } else {
+            renderToolSections(assignmentResult, [
+                { label: "Breakdown", content: data.breakdown },
+                { label: "Suggested approach", content: data.approach },
+                { label: "Key concepts", content: data.keyConcepts || [] },
+                { label: "Step-by-step guidance", content: data.steps || [] },
+                { label: "Resources & study directions", content: data.resources || [] }
+            ]);
+        }
+    } catch (error) {
+        console.error(error);
+        showToolError(assignmentError, "Unable to connect to the Flask server.");
+    }
+
+    assignmentBtn.disabled = false;
+    assignmentBtn.innerHTML = original;
+});
+
+// ---------------------------------------------------------
+// 22. Initial state: restore the last active conversation if
 //     one exists, otherwise show the welcome dashboard
 // ---------------------------------------------------------
 (function init() {

@@ -420,6 +420,283 @@ Do not include explanations outside the JSON."""
 
 
 # ---------------------------------------------------------
+# 11. Route: "/explain-concept" — Concept Explainer
+# ---------------------------------------------------------
+@app.route("/explain-concept", methods=["POST"])
+def explain_concept():
+    data = request.get_json(silent=True) or {}
+    concept = str(data.get("concept", "")).strip()
+
+    if not concept:
+        return jsonify({"error": "Please enter a concept to explain."}), 400
+    if len(concept) > 300:
+        return jsonify({"error": "That's too long. Try a shorter concept or term."}), 400
+
+    prompt = f"""You are an educational AI assistant helping a university student understand a concept.
+
+Concept: {concept}
+
+Provide:
+- simpleExplanation: a short, simple explanation in plain language
+- detailedExplanation: a more thorough explanation appropriate for a university student
+- example: one concrete example illustrating the concept
+- analogy: one real-world analogy that makes the concept easier to grasp
+- keyPoints: a list of 3-5 short key points worth remembering
+
+Return ONLY valid JSON in this format:
+
+{{
+    "simpleExplanation": "...",
+    "detailedExplanation": "...",
+    "example": "...",
+    "analogy": "...",
+    "keyPoints": ["...", "..."]
+}}
+
+Do not return Markdown.
+Do not return ```json.
+Do not include explanations outside the JSON."""
+
+    try:
+        parsed = generate_structured_json(prompt)
+    except json.JSONDecodeError:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+    except Exception as e:
+        print(f"[/explain-concept] Gemini error: {e}")
+        return jsonify({"error": "Something went wrong generating that explanation. Please try again."}), 500
+
+    if not isinstance(parsed, dict):
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    simple_explanation = str(parsed.get("simpleExplanation", "")).strip()
+    if not simple_explanation:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    key_points = parsed.get("keyPoints")
+    key_points = [str(k).strip() for k in key_points if str(k).strip()] if isinstance(key_points, list) else []
+
+    return jsonify({
+        "simpleExplanation": simple_explanation,
+        "detailedExplanation": str(parsed.get("detailedExplanation", "")).strip(),
+        "example": str(parsed.get("example", "")).strip(),
+        "analogy": str(parsed.get("analogy", "")).strip(),
+        "keyPoints": key_points
+    })
+
+
+# ---------------------------------------------------------
+# 12. Route: "/debug-code" — Code Debugger
+# ---------------------------------------------------------
+@app.route("/debug-code", methods=["POST"])
+def debug_code():
+    data = request.get_json(silent=True) or {}
+    language = str(data.get("language", "")).strip()
+    code = str(data.get("code", "")).strip()
+    error_message = str(data.get("error", "")).strip()
+
+    if not code:
+        return jsonify({"error": "Please paste in some code to debug."}), 400
+    if len(code) > 8000:
+        code = code[:8000]
+    if len(error_message) > 1500:
+        error_message = error_message[:1500]
+
+    language_clause = language if language else "not specified — infer it from the code"
+    error_clause = error_message if error_message else "not provided — analyze the code for likely bugs"
+
+    prompt = f"""You are an educational AI assistant helping a university student debug their code.
+
+Programming language: {language_clause}
+
+Code:
+{code}
+
+Reported error message: {error_clause}
+
+Provide:
+- problem: a clear identification of what is wrong
+- causeExplanation: why this happens
+- correctedCode: the complete, corrected, runnable version of the code
+- correctionExplanation: what was changed and why
+- suggestions: a list of 2-4 short suggestions to further improve the code
+
+Return ONLY valid JSON in this format:
+
+{{
+    "problem": "...",
+    "causeExplanation": "...",
+    "correctedCode": "...",
+    "correctionExplanation": "...",
+    "suggestions": ["...", "..."]
+}}
+
+Do not return Markdown.
+Do not return ```json.
+Do not include explanations outside the JSON."""
+
+    try:
+        parsed = generate_structured_json(prompt)
+    except json.JSONDecodeError:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+    except Exception as e:
+        print(f"[/debug-code] Gemini error: {e}")
+        return jsonify({"error": "Something went wrong debugging that code. Please try again."}), 500
+
+    if not isinstance(parsed, dict):
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    problem = str(parsed.get("problem", "")).strip()
+    corrected_code = str(parsed.get("correctedCode", "")).strip()
+    if not problem or not corrected_code:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    suggestions = parsed.get("suggestions")
+    suggestions = [str(s).strip() for s in suggestions if str(s).strip()] if isinstance(suggestions, list) else []
+
+    return jsonify({
+        "problem": problem,
+        "causeExplanation": str(parsed.get("causeExplanation", "")).strip(),
+        "correctedCode": corrected_code,
+        "correctionExplanation": str(parsed.get("correctionExplanation", "")).strip(),
+        "suggestions": suggestions
+    })
+
+
+# ---------------------------------------------------------
+# 13. Route: "/solve-math" — Mathematics Solver
+# ---------------------------------------------------------
+@app.route("/solve-math", methods=["POST"])
+def solve_math():
+    data = request.get_json(silent=True) or {}
+    problem = str(data.get("problem", "")).strip()
+
+    if not problem:
+        return jsonify({"error": "Please enter a problem to solve."}), 400
+    if len(problem) > 2000:
+        return jsonify({"error": "That's too long. Try a shorter problem."}), 400
+
+    prompt = f"""You are an educational AI assistant helping a university student solve a mathematics problem.
+
+Problem: {problem}
+
+Solve it step by step. Do not skip straight to the final answer — show the reasoning a student should follow.
+
+Provide:
+- steps: a list of clear, ordered solution steps (each item is one short step)
+- finalAnswer: the final answer, stated concisely
+- explanation: a brief explanation of the overall approach used
+
+Return ONLY valid JSON in this format:
+
+{{
+    "steps": ["...", "..."],
+    "finalAnswer": "...",
+    "explanation": "..."
+}}
+
+Do not return Markdown.
+Do not return ```json.
+Do not include explanations outside the JSON."""
+
+    try:
+        parsed = generate_structured_json(prompt)
+    except json.JSONDecodeError:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+    except Exception as e:
+        print(f"[/solve-math] Gemini error: {e}")
+        return jsonify({"error": "Something went wrong solving that problem. Please try again."}), 500
+
+    if not isinstance(parsed, dict):
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    steps = parsed.get("steps")
+    steps = [str(s).strip() for s in steps if str(s).strip()] if isinstance(steps, list) else []
+    final_answer = str(parsed.get("finalAnswer", "")).strip()
+
+    if not steps or not final_answer:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    return jsonify({
+        "steps": steps,
+        "finalAnswer": final_answer,
+        "explanation": str(parsed.get("explanation", "")).strip()
+    })
+
+
+# ---------------------------------------------------------
+# 14. Route: "/assignment-help" — Assignment Helper
+# ---------------------------------------------------------
+@app.route("/assignment-help", methods=["POST"])
+def assignment_help():
+    data = request.get_json(silent=True) or {}
+    subject = str(data.get("subject", "")).strip()
+    assignment = str(data.get("assignment", "")).strip()
+
+    if not assignment:
+        return jsonify({"error": "Please describe the assignment."}), 400
+    if len(assignment) > 3000:
+        assignment = assignment[:3000]
+
+    subject_clause = subject if subject else "not specified"
+
+    prompt = f"""You are an educational AI assistant helping a university student understand and approach an assignment. Help them learn and do their own work — do not write the assignment for them.
+
+Subject: {subject_clause}
+Assignment description: {assignment}
+
+Provide:
+- breakdown: a clear breakdown of what the assignment actually requires
+- approach: a suggested approach to tackling it
+- keyConcepts: a list of important concepts the student should understand first
+- steps: a list of ordered, step-by-step guidance (guidance, not a finished submission)
+- resources: a list of suggested resources or study directions (topics to look up — do not invent specific URLs)
+
+Return ONLY valid JSON in this format:
+
+{{
+    "breakdown": "...",
+    "approach": "...",
+    "keyConcepts": ["...", "..."],
+    "steps": ["...", "..."],
+    "resources": ["...", "..."]
+}}
+
+Do not return Markdown.
+Do not return ```json.
+Do not include explanations outside the JSON."""
+
+    try:
+        parsed = generate_structured_json(prompt)
+    except json.JSONDecodeError:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+    except Exception as e:
+        print(f"[/assignment-help] Gemini error: {e}")
+        return jsonify({"error": "Something went wrong generating guidance. Please try again."}), 500
+
+    if not isinstance(parsed, dict):
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    breakdown = str(parsed.get("breakdown", "")).strip()
+    if not breakdown:
+        return jsonify({"error": "The AI returned an unexpected response. Please try again."}), 502
+
+    key_concepts = parsed.get("keyConcepts")
+    key_concepts = [str(k).strip() for k in key_concepts if str(k).strip()] if isinstance(key_concepts, list) else []
+    steps = parsed.get("steps")
+    steps = [str(s).strip() for s in steps if str(s).strip()] if isinstance(steps, list) else []
+    resources = parsed.get("resources")
+    resources = [str(r).strip() for r in resources if str(r).strip()] if isinstance(resources, list) else []
+
+    return jsonify({
+        "breakdown": breakdown,
+        "approach": str(parsed.get("approach", "")).strip(),
+        "keyConcepts": key_concepts,
+        "steps": steps,
+        "resources": resources
+    })
+
+
+# ---------------------------------------------------------
 # 11. Run the server
 # ---------------------------------------------------------
 # host="0.0.0.0" makes the server reachable from other devices

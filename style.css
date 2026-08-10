@@ -531,6 +531,40 @@ html[data-theme="dark"] .priority-high { background: rgba(224, 87, 76, .16); col
     .planner-tabs { flex-wrap: wrap; }
 }
 
+/* ===================== AI STUDY TOOLS ===================== */
+.tool-result {
+    margin-top: 20px; padding: 22px; border: 1px solid var(--border); border-radius: var(--radius-lg);
+    background: var(--surface); box-shadow: var(--shadow-sm);
+}
+.tool-result-section { margin-bottom: 18px; }
+.tool-result-section:last-child { margin-bottom: 0; }
+.tool-result-section h4 {
+    font: 700 12px var(--font-display); color: var(--royal); text-transform: uppercase;
+    letter-spacing: .07em; margin-bottom: 8px;
+}
+html[data-theme="dark"] .tool-result-section h4 { color: var(--sky); }
+.tool-result-section p { font-size: 14px; line-height: 1.7; color: var(--text); }
+.tool-result-section ul, .tool-steps { padding-left: 20px; }
+.tool-result-section ul li, .tool-steps li { font-size: 14px; line-height: 1.7; color: var(--text); margin-bottom: 4px; }
+
+.tool-code-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+.tool-code-header h4 { margin-bottom: 0; }
+.tool-code-block {
+    padding: 16px; border-radius: 12px; background: var(--navy); color: var(--ice);
+    font: 400 13px 'SFMono-Regular', Consolas, monospace; overflow-x: auto; line-height: 1.6; white-space: pre-wrap;
+}
+html[data-theme="dark"] .tool-code-block { background: #051526; }
+
+.tool-answer-card {
+    padding: 16px 18px; border-radius: var(--radius-md); background: var(--ice);
+    border: 1px solid var(--sky); margin-bottom: 18px;
+}
+html[data-theme="dark"] .tool-answer-card { background: var(--surface-2); border-color: var(--border); }
+.tool-answer-label { display: block; font: 700 11px var(--font-body); text-transform: uppercase; letter-spacing: .1em; color: var(--royal); margin-bottom: 6px; }
+html[data-theme="dark"] .tool-answer-label { color: var(--sky); }
+.tool-answer-card p { font: 700 16px var(--font-display); color: var(--navy); }
+html[data-theme="dark"] .tool-answer-card p { color: var(--ice); }
+
 /* ===================== RESPONSIVE ===================== */
 @media (max-width: 1080px) {
     .stat-grid { grid-template-columns: repeat(2, 1fr); }

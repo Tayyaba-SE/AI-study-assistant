@@ -151,10 +151,10 @@
                 <div class="quick-section">
                     <h2>Quick actions</h2>
                     <div class="quick-grid">
-                        <button class="quick-btn" data-prompt="Explain this concept to me: ">
+                        <button class="quick-btn" data-tool="explain" data-prompt="Explain this concept to me: ">
                             <i class="fa-regular fa-lightbulb"></i><span>Explain a concept</span>
                         </button>
-                        <button class="quick-btn" data-prompt="Can you help debug this code?
+                        <button class="quick-btn" data-tool="debug" data-prompt="Can you help debug this code?
 
 ">
                             <i class="fa-solid fa-bug"></i><span>Debug code</span>
@@ -162,10 +162,10 @@
                         <button class="quick-btn" data-prompt="Summarize these notes: ">
                             <i class="fa-regular fa-file-lines"></i><span>Summarize notes</span>
                         </button>
-                        <button class="quick-btn" data-prompt="Generate a quiz about: ">
+                        <button class="quick-btn" data-view="quiz" data-prompt="Generate a quiz about: ">
                             <i class="fa-solid fa-list-check"></i><span>Generate quiz</span>
                         </button>
-                        <button class="quick-btn" data-prompt="Create flashcards for: ">
+                        <button class="quick-btn" data-view="flashcards" data-prompt="Create flashcards for: ">
                             <i class="fa-regular fa-clone"></i><span>Create flashcards</span>
                         </button>
                         <button class="quick-btn" data-prompt="I'd like to upload a PDF of my study material.">
@@ -177,19 +177,19 @@
                 <div class="feature-section">
                     <h2>Explore what I can do</h2>
                     <div class="feature-grid">
-                        <button class="feature-card" data-prompt="Explain this concept to me: "><i class="fa-regular fa-lightbulb"></i><span>Explain concepts</span></button>
+                        <button class="feature-card" data-tool="explain" data-prompt="Explain this concept to me: "><i class="fa-regular fa-lightbulb"></i><span>Explain concepts</span></button>
                         <button class="feature-card" data-prompt="Help me solve this programming problem: "><i class="fa-solid fa-code"></i><span>Solve programming problems</span></button>
-                        <button class="feature-card" data-prompt="Can you help debug this code?
+                        <button class="feature-card" data-tool="debug" data-prompt="Can you help debug this code?
 
 "><i class="fa-solid fa-bug"></i><span>Debug code</span></button>
                         <button class="feature-card" data-prompt="Summarize this PDF: "><i class="fa-regular fa-file-pdf"></i><span>Summarize PDFs</span></button>
-                        <button class="feature-card" data-prompt="Create flashcards for: "><i class="fa-regular fa-clone"></i><span>Create flashcards</span></button>
-                        <button class="feature-card" data-prompt="Generate multiple-choice questions about: "><i class="fa-solid fa-list-check"></i><span>Generate MCQs</span></button>
-                        <button class="feature-card" data-prompt="Help me build a study plan for: "><i class="fa-regular fa-calendar"></i><span>Study planner</span></button>
+                        <button class="feature-card" data-view="flashcards" data-prompt="Create flashcards for: "><i class="fa-regular fa-clone"></i><span>Create flashcards</span></button>
+                        <button class="feature-card" data-view="quiz" data-prompt="Generate multiple-choice questions about: "><i class="fa-solid fa-list-check"></i><span>Generate MCQs</span></button>
+                        <button class="feature-card" data-view="planner" data-prompt="Help me build a study plan for: "><i class="fa-regular fa-calendar"></i><span>Study planner</span></button>
                         <button class="feature-card" data-prompt="Help me build a mind map for: "><i class="fa-solid fa-diagram-project"></i><span>Mind maps</span></button>
-                        <button class="feature-card" data-prompt="Help me with this assignment: "><i class="fa-solid fa-graduation-cap"></i><span>Assignment helper</span></button>
+                        <button class="feature-card" data-tool="assignment" data-prompt="Help me with this assignment: "><i class="fa-solid fa-graduation-cap"></i><span>Assignment helper</span></button>
                         <button class="feature-card" data-prompt="Help me practice my English. Let's talk about: "><i class="fa-solid fa-language"></i><span>English practice</span></button>
-                        <button class="feature-card" data-prompt="Help me solve this math problem: "><i class="fa-solid fa-square-root-variable"></i><span>Mathematics solver</span></button>
+                        <button class="feature-card" data-tool="math" data-prompt="Help me solve this math problem: "><i class="fa-solid fa-square-root-variable"></i><span>Mathematics solver</span></button>
                         <button class="feature-card" data-prompt="Suggest a git commit message for these changes: "><i class="fa-brands fa-git-alt"></i><span>Git commit suggestions</span></button>
                         <button class="feature-card" data-prompt="Write a README for this project: "><i class="fa-regular fa-file-code"></i><span>README generator</span></button>
                     </div>
@@ -505,6 +505,103 @@
 
                 <div class="panel-list" id="taskList"></div>
                 <p class="empty-state" id="taskEmpty" hidden>No upcoming tasks — generate a plan above or add one manually.</p>
+            </section>
+
+            <!-- ===== AI Study Tools panel ===== -->
+            <section class="panel-view" id="toolsView" hidden>
+                <div class="panel-header">
+                    <div>
+                        <h2>AI study tools</h2>
+                        <p class="panel-sub">Focused help with a concept, code, a math problem, or an assignment.</p>
+                    </div>
+                </div>
+
+                <div class="planner-tabs" id="toolsTabs">
+                    <button type="button" class="planner-tab active" data-tool="explain">Concept explainer</button>
+                    <button type="button" class="planner-tab" data-tool="debug">Code debugger</button>
+                    <button type="button" class="planner-tab" data-tool="math">Math solver</button>
+                    <button type="button" class="planner-tab" data-tool="assignment">Assignment helper</button>
+                </div>
+
+                <!-- Concept Explainer -->
+                <div class="tool-pane" id="tool-explain">
+                    <form class="flashcard-form" id="explainForm">
+                        <label class="field">
+                            <span>Concept</span>
+                            <input type="text" id="explainConceptInput" placeholder="e.g. Recursion">
+                        </label>
+                        <button type="submit" class="primary-btn" id="explainBtn">
+                            <i class="fa-regular fa-lightbulb"></i> Explain concept
+                        </button>
+                    </form>
+                    <p class="flashcard-error" id="explainError" hidden></p>
+                    <div class="tool-result" id="explainResult" hidden></div>
+                </div>
+
+                <!-- Code Debugger -->
+                <div class="tool-pane" id="tool-debug" hidden>
+                    <form class="flashcard-form" id="debugForm">
+                        <label class="field field-narrow">
+                            <span>Language</span>
+                            <select id="debugLanguageInput">
+                                <option value="">Auto-detect</option>
+                                <option value="Python">Python</option>
+                                <option value="JavaScript">JavaScript</option>
+                                <option value="Java">Java</option>
+                                <option value="C++">C++</option>
+                                <option value="C">C</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </label>
+                        <label class="field">
+                            <span>Code</span>
+                            <textarea id="debugCodeInput" rows="6" placeholder="Paste your code here..."></textarea>
+                        </label>
+                        <label class="field">
+                            <span>Error message (optional)</span>
+                            <textarea id="debugErrorInput" rows="2" placeholder="Paste the error message you're seeing..."></textarea>
+                        </label>
+                        <button type="submit" class="primary-btn" id="debugBtn">
+                            <i class="fa-solid fa-bug"></i> Debug code
+                        </button>
+                    </form>
+                    <p class="flashcard-error" id="debugError" hidden></p>
+                    <div class="tool-result" id="debugResult" hidden></div>
+                </div>
+
+                <!-- Mathematics Solver -->
+                <div class="tool-pane" id="tool-math" hidden>
+                    <form class="flashcard-form" id="mathForm">
+                        <label class="field">
+                            <span>Problem</span>
+                            <textarea id="mathProblemInput" rows="3" placeholder="e.g. Solve for x: 2x + 5 = 17"></textarea>
+                        </label>
+                        <button type="submit" class="primary-btn" id="mathBtn">
+                            <i class="fa-solid fa-square-root-variable"></i> Solve problem
+                        </button>
+                    </form>
+                    <p class="flashcard-error" id="mathError" hidden></p>
+                    <div class="tool-result" id="mathResult" hidden></div>
+                </div>
+
+                <!-- Assignment Helper -->
+                <div class="tool-pane" id="tool-assignment" hidden>
+                    <form class="flashcard-form" id="assignmentForm">
+                        <label class="field">
+                            <span>Subject (optional)</span>
+                            <input type="text" id="assignmentSubjectInput" placeholder="e.g. History">
+                        </label>
+                        <label class="field">
+                            <span>Assignment description</span>
+                            <textarea id="assignmentTextInput" rows="4" placeholder="Describe the assignment or paste the instructions..."></textarea>
+                        </label>
+                        <button type="submit" class="primary-btn" id="assignmentBtn">
+                            <i class="fa-solid fa-graduation-cap"></i> Get guidance
+                        </button>
+                    </form>
+                    <p class="flashcard-error" id="assignmentError" hidden></p>
+                    <div class="tool-result" id="assignmentResult" hidden></div>
+                </div>
             </section>
 
         </main>
