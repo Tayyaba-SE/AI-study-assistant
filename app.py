@@ -76,6 +76,7 @@ def chat():
 
     # Get the "message" field the front-end sent us
     question = data.get("message", "")
+    preferences = data.get("preferences", {})
 
     # If no message was provided, return a 400 Bad Request
     if not question:
@@ -83,9 +84,16 @@ def chat():
 
     try:
         # Send the user's question to the Gemini model
+        response_style = str(preferences.get("responseStyle", "balanced")).lower() if isinstance(preferences, dict) else "balanced"
+        explanation_level = str(preferences.get("explanationLevel", "intermediate")).lower() if isinstance(preferences, dict) else "intermediate"
+        if response_style not in ("concise", "balanced", "detailed"):
+            response_style = "balanced"
+        if explanation_level not in ("beginner", "intermediate", "advanced"):
+            explanation_level = "intermediate"
+        prompt = f"""You are a helpful AI study assistant. Answer the student's question using a {response_style} response style and an {explanation_level} explanation level.\n\nQuestion: {question}"""
         response = client.models.generate_content(
             model=MODEL,
-            contents=question
+            contents=prompt
         )
 
         # Send the AI's answer back to the front-end as JSON

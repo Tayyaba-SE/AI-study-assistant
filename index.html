@@ -10,7 +10,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -110,9 +110,23 @@
         <!-- ----- Workspace ----- -->
         <main class="workspace-area" id="workspaceArea">
 
-            <!-- ===== Welcome dashboard (shown before first message) ===== -->
-            <section class="welcome-view" id="welcomeView">
+            <!-- ===== Student dashboard ===== -->
+            <section class="welcome-view dashboard-view" id="welcomeView">
+                <div class="dashboard-welcome"><h2 id="dashboardGreeting">Good morning, Alex</h2><p>What would you like to study today?</p></div>
+                <section class="quick-section"><h2>Quick actions</h2><div class="quick-grid dashboard-actions">
+                    <button class="quick-btn" data-dashboard-action="chat"><i class="fa-solid fa-comment-dots"></i><span><strong>Ask AI</strong><small>Get help with a question</small></span></button>
+                    <button class="quick-btn" data-view="quiz"><i class="fa-solid fa-list-check"></i><span><strong>Generate quiz</strong><small>Test your understanding</small></span></button>
+                    <button class="quick-btn" data-view="flashcards"><i class="fa-regular fa-clone"></i><span><strong>Flashcards</strong><small>Review key concepts</small></span></button>
+                    <button class="quick-btn" data-view="planner"><i class="fa-regular fa-calendar"></i><span><strong>Study planner</strong><small>Plan your next session</small></span></button>
+                </div></section>
+                <section class="dashboard-section"><h2>Study overview</h2><article class="overview-card">
+                    <div><p class="overview-label">Study progress</p><p class="overview-value" id="dashboardProgress">0%</p><div class="progress-track"><span id="dashboardProgressBar"></span></div></div>
+                    <div><p class="overview-label">Current streak</p><p class="overview-value" id="dashboardStreak">0 days</p></div>
+                    <div><p class="overview-label">Completed tasks</p><p class="overview-value" id="dashboardCompletedTasks">0</p></div>
+                </article></section>
+                <div class="dashboard-bottom"><section class="dashboard-section"><h2>Recent activity</h2><div class="activity-list" id="recentActivity"><p class="empty-state">No recent activity yet.</p></div></section><section class="dashboard-section continue-section"><h2>Continue studying</h2><article class="continue-card" id="continueStudy"><p class="empty-state">No unfinished study activity.</p></article></section></div>
 
+                <div class="legacy-dashboard-content" hidden>
                 <div class="stat-grid">
                     <article class="stat-card">
                         <div class="stat-icon stat-icon-progress"><i class="fa-solid fa-chart-line"></i></div>
@@ -193,6 +207,7 @@
                         <button class="feature-card" data-prompt="Suggest a git commit message for these changes: "><i class="fa-brands fa-git-alt"></i><span>Git commit suggestions</span></button>
                         <button class="feature-card" data-prompt="Write a README for this project: "><i class="fa-regular fa-file-code"></i><span>README generator</span></button>
                     </div>
+                </div>
                 </div>
             </section>
 
@@ -505,6 +520,24 @@
 
                 <div class="panel-list" id="taskList"></div>
                 <p class="empty-state" id="taskEmpty" hidden>No upcoming tasks — generate a plan above or add one manually.</p>
+            </section>
+
+            <!-- ===== Profile panel ===== -->
+            <section class="panel-view profile-view" id="profileView" hidden>
+                <div class="panel-header"><div><h2>Profile</h2><p class="panel-sub">Manage the study information and preferences used in your workspace.</p></div><button class="primary-btn" id="editProfileBtn"><i class="fa-solid fa-pen"></i> Edit profile</button></div>
+                <form id="profileForm"><div class="profile-card"><div class="profile-avatar" id="profileAvatar">A</div><div><h3 id="profileNameDisplay">Alex Morgan</h3><p id="profileProgramDisplay">Computer Science</p></div></div>
+                    <div class="profile-fields"><label class="field"><span>Name</span><input id="profileName" required disabled></label><label class="field"><span>Student ID</span><input id="profileStudentId" disabled></label><label class="field"><span>Program</span><input id="profileProgram" disabled></label><label class="field"><span>University</span><input id="profileUniversity" disabled></label><label class="field"><span>Preferred subjects</span><input id="profileSubjects" placeholder="e.g. Computer Science, Mathematics" disabled></label><label class="field"><span>Learning preferences</span><select id="profileLearningPreference" disabled><option value="Visual learner">Visual learner</option><option value="Practice-based">Practice-based</option><option value="Reading and writing">Reading and writing</option><option value="Discussion-based">Discussion-based</option></select></label></div>
+                    <div class="note-form-actions" id="profileActions" hidden><button type="button" class="ghost-btn" id="cancelProfileBtn">Cancel</button><button type="submit" class="primary-btn">Save changes</button></div>
+                </form>
+            </section>
+
+            <!-- ===== Settings panel ===== -->
+            <section class="panel-view settings-view" id="settingsView" hidden>
+                <div class="panel-header"><div><h2>Settings</h2><p class="panel-sub">Control how your study workspace looks and responds.</p></div></div>
+                <section class="settings-card"><h3>Appearance</h3><p>Choose the theme that is most comfortable for studying.</p><div class="theme-options"><button type="button" class="theme-choice" data-theme-choice="light"><i class="fa-regular fa-sun"></i> Light mode</button><button type="button" class="theme-choice" data-theme-choice="dark"><i class="fa-regular fa-moon"></i> Dark mode</button></div></section>
+                <section class="settings-card"><h3>AI preferences</h3><p>These preferences are included with new AI chat requests.</p><div class="profile-fields"><label class="field"><span>Response style</span><select id="responseStyle"><option value="concise">Concise</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label><label class="field"><span>Explanation level</span><select id="explanationLevel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label></div></section>
+                <section class="settings-card danger-zone"><h3>Data &amp; privacy</h3><p>Data is stored locally in this browser. Clearing data cannot be undone.</p><div class="data-actions"><button type="button" class="ghost-btn" data-clear="conversations">Clear chat history</button><button type="button" class="ghost-btn" data-clear="notes">Clear saved notes</button><button type="button" class="ghost-btn" data-clear="bookmarks">Clear bookmarks</button><button type="button" class="danger-btn" data-clear="all">Reset application data</button></div></section>
+                <section class="settings-card about-card"><h3>About</h3><p><strong>AI Study Assistant</strong><br>A student-focused AI platform designed to help with learning, programming, revision, and study planning.</p><small>Version 1.0.0 · Flask · JavaScript · Google Gemini</small></section>
             </section>
 
             <!-- ===== AI Study Tools panel ===== -->
