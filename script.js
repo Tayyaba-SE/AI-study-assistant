@@ -32,12 +32,18 @@ const plannerView = document.getElementById("plannerView");
 const toolsView = document.getElementById("toolsView");
 const profileView = document.getElementById("profileView");
 const settingsView = document.getElementById("settingsView");
+const helpView = document.getElementById("helpView");
 const responseEl = document.getElementById("response");
 
 const messageInput = document.getElementById("messageInput");
 const sendBtn = document.getElementById("sendBtn");
 
-const quickPromptButtons = document.querySelectorAll(".quick-btn, .feature-card");
+const dashboardGreeting = document.getElementById("dashboardGreeting");
+const sidebarUserName = document.getElementById("sidebarUserName");
+const sidebarUserSub = document.getElementById("sidebarUserSub");
+
+const profileMenuTrigger = document.getElementById("profileMenuTrigger");
+const profileDropdown = document.getElementById("profileDropdown");
 
 const historyList = document.getElementById("historyList");
 const historyEmpty = document.getElementById("historyEmpty");
@@ -60,6 +66,7 @@ const bookmarksEmpty = document.getElementById("bookmarksEmpty");
 let currentConversation = null;   // { id, title, messages: [{role, text, time}], createdAt, updatedAt }
 let editingNoteId = null;
 let activeAbortController = null;
+let profileFirstName = "";   // set from saved profile, if any; empty = no name saved yet
 
 const STORAGE_KEYS = {
     conversations: "studyai-conversations",
@@ -70,7 +77,7 @@ const STORAGE_KEYS = {
     quizHistory: "studyai-quiz-history",
     plannerTasks: "studyai-planner-tasks",
     profile: "studyai-profile",
-    preferences: "studyai-preferences"
+    aiPreferences: "studyai-ai-preferences"
 };
 
 // ---------------------------------------------------------
@@ -97,6 +104,26 @@ function saveList(key, list) {
 
 function loadConversations() { return loadList(STORAGE_KEYS.conversations); }
 function saveConversations(list) { saveList(STORAGE_KEYS.conversations, list); }
+
+// For single-object storage (not a list) — Profile, AI preferences
+function loadObject(key, fallback) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? { ...fallback, ...JSON.parse(raw) } : { ...fallback };
+    } catch (e) {
+        console.error(`Could not read ${key} from localStorage`, e);
+        return { ...fallback };
+    }
+}
+function saveObject(key, obj) {
+    try {
+        localStorage.setItem(key, JSON.stringify(obj));
+        return true;
+    } catch (e) {
+        console.error(`Could not write ${key} to localStorage`, e);
+        return false;
+    }
+}
 
 function upsertConversation(conv) {
     const list = loadConversations();
@@ -154,7 +181,8 @@ const views = {
     planner: plannerView,
     tools: toolsView,
     profile: profileView,
-    settings: settingsView
+    settings: settingsView,
+    help: helpView
 };
 
 function showView(name) {
@@ -163,14 +191,10 @@ function showView(name) {
 }
 
 // ---------------------------------------------------------
-// 6. Placeholder text + intro line for sidebar views not yet
-//    fully built (Phase 2+ features)
+// 6. Default composer placeholder text
 // ---------------------------------------------------------
 const viewConfigs = {
-    dashboard: { placeholder: "Ask anything about programming, university courses, assignments, mathematics, or upload your study material..." },
-    settings: { placeholder: "Tell me how you want the assistant to behave...", intro: "Settings are coming soon." },
-    help: { placeholder: "Ask for help with the app or your studies...", intro: "Use the sidebar to reach chat history, saved notes, and bookmarks. Everything is stored on this device. For anything else, just ask me here." },
-    profile: { placeholder: "Ask anything about your studies...", intro: "Your profile settings are coming soon." }
+    dashboard: { placeholder: "Ask anything about programming, university courses, assignments, mathematics, or upload your study material..." }
 };
 
 // ---------------------------------------------------------
@@ -183,9 +207,12 @@ function updateGreeting() {
     if (hour < 12) greeting = "Good morning";
     else if (hour < 18) greeting = "Good afternoon";
 
-    greetingText.textContent = `${greeting}, Alex`;
+    const greetingLine = profileFirstName ? `${greeting}, ${profileFirstName}` : greeting;
+    greetingText.textContent = greetingLine;
+    dashboardGreeting.textContent = greetingLine;
     dateLine.textContent = now.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" });
 }
+updateGreeting();
 
 // ---------------------------------------------------------
 // 8. Theme toggle (persisted)
@@ -205,6 +232,7 @@ themeToggle.addEventListener("click", () => {
     const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
     applyTheme(next);
     localStorage.setItem("studyai-theme", next);
+    syncThemeSwitchUI();
 });
 
 // ---------------------------------------------------------
@@ -221,7 +249,6 @@ function setActiveNav(target) {
     navItems.forEach((item) => item.classList.remove("active"));
     userCardBtn.classList.remove("active");
     if (target && target.classList.contains("nav-item")) target.classList.add("active");
-    if (target === userCardBtn) userCardBtn.classList.add("active");
 }
 
 function goToDashboard() {
@@ -229,7 +256,7 @@ function goToDashboard() {
     localStorage.removeItem(STORAGE_KEYS.activeId);
     messageInput.placeholder = viewConfigs.dashboard.placeholder;
     showView("welcome");
-    renderDashboard();
+    renderDashboardOverview();
 }
 
 function handleNavClick(viewName, target) {
@@ -242,15 +269,13 @@ function handleNavClick(viewName, target) {
     if (viewName === "flashcards") { showView("flashcards"); renderSavedDecks(); return; }
     if (viewName === "quiz") { showView("quiz"); return; }
     if (viewName === "planner") { showView("planner"); renderTasks(); return; }
-    if (viewName === "profile") { showView("profile"); renderProfile(); return; }
-    if (viewName === "settings") { showView("settings"); renderSettings(); return; }
+    if (viewName === "tools") { showView("tools"); return; }
+    if (viewName === "profile") { showView("profile"); renderProfileDisplay(); return; }
+    if (viewName === "settings") { showView("settings"); syncThemeSwitchUI(); syncAiPreferencesUI(); return; }
+    if (viewName === "help") { showView("help"); return; }
 
-    // Phase 2+ features: land in chat with a short explanatory note
-    const config = viewConfigs[viewName] || viewConfigs.dashboard;
-    messageInput.placeholder = config.placeholder;
-    showView("chat");
-    responseEl.innerHTML = "";
-    if (config.intro) appendStatusMessage(config.intro);
+    // Fallback: unrecognized view name, land safely on the dashboard
+    goToDashboard();
 }
 
 navItems.forEach((item) => item.addEventListener("click", () => handleNavClick(item.dataset.view, item)));
@@ -271,29 +296,47 @@ newChatBtn.addEventListener("click", () => {
 });
 
 // ---------------------------------------------------------
-// 12. Quick action + feature card buttons: seed the composer
+// 12. Dashboard quick actions + profile dropdown menu
 // ---------------------------------------------------------
-quickPromptButtons.forEach((btn) => {
+document.querySelectorAll(".action-card[data-view]").forEach((btn) => {
     btn.addEventListener("click", () => {
         const targetView = btn.dataset.view;
-        const targetTool = btn.dataset.tool;
-
-        if (targetView) {
-            handleNavClick(targetView, document.querySelector(`.nav-item[data-view="${targetView}"]`));
-            return;
-        }
-        if (targetTool) {
-            setActiveNav(null);
-            showView("tools");
-            switchTool(targetTool);
-            return;
-        }
-
-        const prompt = btn.dataset.prompt || "";
-        messageInput.value = prompt;
-        messageInput.focus();
-        messageInput.setSelectionRange(prompt.length, prompt.length);
+        handleNavClick(targetView, document.querySelector(`.nav-item[data-view="${targetView}"]`));
     });
+});
+
+const askAiActionBtn = document.getElementById("askAiActionBtn");
+askAiActionBtn.addEventListener("click", () => {
+    messageInput.focus();
+    messageInput.scrollIntoView({ behavior: "smooth", block: "center" });
+});
+
+function closeProfileDropdown() {
+    profileDropdown.hidden = true;
+    profileMenuTrigger.setAttribute("aria-expanded", "false");
+}
+function openProfileDropdown() {
+    profileDropdown.hidden = false;
+    profileMenuTrigger.setAttribute("aria-expanded", "true");
+}
+profileMenuTrigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (profileDropdown.hidden) openProfileDropdown(); else closeProfileDropdown();
+});
+profileDropdown.querySelectorAll(".profile-dropdown-item").forEach((item) => {
+    item.addEventListener("click", () => {
+        const view = item.dataset.view;
+        closeProfileDropdown();
+        handleNavClick(view, document.querySelector(`.nav-item[data-view="${view}"]`));
+    });
+});
+document.addEventListener("click", (e) => {
+    if (!profileDropdown.hidden && !profileMenuTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
+        closeProfileDropdown();
+    }
+});
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !profileDropdown.hidden) closeProfileDropdown();
 });
 
 // ---------------------------------------------------------
@@ -454,10 +497,15 @@ async function askQuestion(overrideMessage) {
     };
 
     try {
+        const aiPrefs = loadAiPreferences();
         const res = await fetch("/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ message: question, preferences: loadPreferences() }),
+            body: JSON.stringify({
+                message: question,
+                responseStyle: aiPrefs.responseStyle,
+                explanationLevel: aiPrefs.explanationLevel
+            }),
             signal: activeAbortController.signal
         });
 
@@ -1549,54 +1597,389 @@ assignmentForm.addEventListener("submit", async (e) => {
 });
 
 // ---------------------------------------------------------
-// 22. Dashboard, profile, and settings
+// 22. Dashboard overview (Study overview, Recent activity,
+//     Continue studying) — all computed from real stored data
 // ---------------------------------------------------------
-const defaultProfile = { name: "Alex Morgan", studentId: "", program: "Computer Science", university: "", subjects: "", learningPreference: "Visual learner" };
-const defaultPreferences = { responseStyle: "balanced", explanationLevel: "intermediate" };
-function loadObject(key, fallback) { try { return { ...fallback, ...(JSON.parse(localStorage.getItem(key)) || {}) }; } catch { return { ...fallback }; } }
-function loadProfile() { return loadObject(STORAGE_KEYS.profile, defaultProfile); }
-function loadPreferences() { return loadObject(STORAGE_KEYS.preferences, defaultPreferences); }
-function saveObject(key, value) { localStorage.setItem(key, JSON.stringify(value)); }
+const overviewProgressValue = document.getElementById("overviewProgressValue");
+const overviewStreakValue = document.getElementById("overviewStreakValue");
+const overviewCompletedValue = document.getElementById("overviewCompletedValue");
+const continueStudyingCard = document.getElementById("continueStudyingCard");
+const continueStudyingEmpty = document.getElementById("continueStudyingEmpty");
+const continueTitle = document.getElementById("continueTitle");
+const continueMeta = document.getElementById("continueMeta");
+const continueBtn = document.getElementById("continueBtn");
+const recentActivityList = document.getElementById("recentActivityList");
+const recentActivityEmpty = document.getElementById("recentActivityEmpty");
 
-function renderDashboard() {
-    const tasks = loadTasks(); const completed = tasks.filter(t => t.completed); const total = tasks.length;
-    const progress = total ? Math.round((completed.length / total) * 100) : 0;
-    document.getElementById("dashboardProgress").textContent = `${progress}%`;
-    document.getElementById("dashboardProgressBar").style.width = `${progress}%`;
-    document.getElementById("dashboardCompletedTasks").textContent = completed.length;
-    const activeDays = new Set(loadConversations().flatMap(c => (c.messages || []).filter(m => m.role === "user").map(m => new Date(m.time).toDateString())));
-    let streak = 0; for (let d = new Date(); activeDays.has(d.toDateString()); d.setDate(d.getDate() - 1)) streak += 1;
-    document.getElementById("dashboardStreak").textContent = `${streak} day${streak === 1 ? "" : "s"}`;
-    const activity = [
-        ...loadConversations().map(c => ({ type: "fa-comments", text: `AI conversation: ${c.title || "Untitled conversation"}`, time: c.updatedAt })),
-        ...loadNotes().map(n => ({ type: "fa-file-lines", text: `Saved note: ${n.title || "Untitled note"}`, time: n.updatedAt || n.createdAt })),
-        ...loadBookmarks().map(b => ({ type: "fa-bookmark", text: `Bookmarked: ${truncate(b.question || "AI response", 45)}`, time: b.createdAt || b.time })),
-        ...completed.map(t => ({ type: "fa-circle-check", text: `Completed task: ${t.name}`, time: t.completedAt }))
-    ].filter(a => a.time).sort((a,b) => b.time - a.time).slice(0, 5);
-    const activityEl = document.getElementById("recentActivity");
-    activityEl.innerHTML = activity.length ? activity.map(a => `<div class="activity-item"><i class="fa-solid ${a.type}"></i><div><p>${escapeHtml(a.text)}</p><small>${formatShortDate(a.time)}</small></div></div>`).join("") : '<p class="empty-state">No recent activity yet.</p>';
-    const nextTask = tasks.filter(t => !t.completed).sort((a,b) => (a.date || "9999").localeCompare(b.date || "9999"))[0];
-    const continueEl = document.getElementById("continueStudy");
-    continueEl.innerHTML = nextTask ? `<h3>${escapeHtml(nextTask.name)}</h3><p>${escapeHtml(nextTask.subject || "Study task")}${nextTask.date ? ` · ${formatTaskDate(nextTask.date)}` : ""}</p><button class="primary-btn" id="continueTaskBtn">Continue <i class="fa-solid fa-arrow-right"></i></button>` : '<p class="empty-state">No unfinished study activity.</p>';
-    const continueBtn = document.getElementById("continueTaskBtn"); if (continueBtn) continueBtn.addEventListener("click", () => handleNavClick("planner", document.querySelector('[data-view="planner"]')));
+const ACTIVITY_ICONS = { chat: "fa-comment", note: "fa-note-sticky", bookmark: "fa-bookmark", task: "fa-circle-check" };
+
+function getAllActivityDates() {
+    const dates = new Set();
+    loadConversations().forEach((c) => c.messages.forEach((m) => dates.add(new Date(m.time).toDateString())));
+    loadTasks().filter((t) => t.completed && t.completedAt).forEach((t) => dates.add(new Date(t.completedAt).toDateString()));
+    loadNotes().forEach((n) => dates.add(new Date(n.createdAt).toDateString()));
+    loadBookmarks().forEach((b) => dates.add(new Date(b.createdAt).toDateString()));
+    return dates;
 }
 
-const profileInputs = ["profileName", "profileStudentId", "profileProgram", "profileUniversity", "profileSubjects", "profileLearningPreference"].map(id => document.getElementById(id));
-function renderProfile() { const p = loadProfile(); document.getElementById("profileName").value = p.name; document.getElementById("profileStudentId").value = p.studentId; document.getElementById("profileProgram").value = p.program; document.getElementById("profileUniversity").value = p.university; document.getElementById("profileSubjects").value = p.subjects; document.getElementById("profileLearningPreference").value = p.learningPreference; document.getElementById("profileNameDisplay").textContent = p.name; document.getElementById("profileProgramDisplay").textContent = p.program || "Student"; document.getElementById("profileAvatar").textContent = (p.name || "S").trim().charAt(0).toUpperCase(); }
-function setProfileEditing(editing) { profileInputs.forEach(input => input.disabled = !editing); document.getElementById("profileActions").hidden = !editing; document.getElementById("editProfileBtn").hidden = editing; }
-document.getElementById("editProfileBtn").addEventListener("click", () => setProfileEditing(true));
-document.getElementById("cancelProfileBtn").addEventListener("click", () => { renderProfile(); setProfileEditing(false); });
-document.getElementById("profileForm").addEventListener("submit", e => { e.preventDefault(); const p = { name: document.getElementById("profileName").value.trim() || "Student", studentId: document.getElementById("profileStudentId").value.trim(), program: document.getElementById("profileProgram").value.trim(), university: document.getElementById("profileUniversity").value.trim(), subjects: document.getElementById("profileSubjects").value.trim(), learningPreference: document.getElementById("profileLearningPreference").value }; saveObject(STORAGE_KEYS.profile, p); renderProfile(); updateGreeting(); setProfileEditing(false); });
+function computeStreak() {
+    const dates = getAllActivityDates();
+    let cursor = new Date();
+    if (!dates.has(cursor.toDateString())) {
+        cursor.setDate(cursor.getDate() - 1);
+        if (!dates.has(cursor.toDateString())) return 0;
+    }
+    let streak = 0;
+    while (dates.has(cursor.toDateString())) {
+        streak += 1;
+        cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+}
 
-function renderSettings() { const pref = loadPreferences(); document.getElementById("responseStyle").value = pref.responseStyle; document.getElementById("explanationLevel").value = pref.explanationLevel; document.querySelectorAll(".theme-choice").forEach(b => b.classList.toggle("active", b.dataset.themeChoice === document.documentElement.dataset.theme)); }
-function savePreferences() { saveObject(STORAGE_KEYS.preferences, { responseStyle: document.getElementById("responseStyle").value, explanationLevel: document.getElementById("explanationLevel").value }); }
-document.getElementById("responseStyle").addEventListener("change", savePreferences); document.getElementById("explanationLevel").addEventListener("change", savePreferences);
-document.querySelectorAll(".theme-choice").forEach(btn => btn.addEventListener("click", () => { const theme = btn.dataset.themeChoice; applyTheme(theme); localStorage.setItem("studyai-theme", theme); renderSettings(); }));
-document.querySelectorAll("[data-clear]").forEach(btn => btn.addEventListener("click", () => { const type = btn.dataset.clear; const labels = { conversations: "chat history", notes: "saved notes", bookmarks: "bookmarks", all: "all application data" }; if (!confirm(`Are you sure you want to delete ${labels[type]}? This action cannot be undone.`)) return; if (type === "all") Object.values(STORAGE_KEYS).forEach(key => localStorage.removeItem(key)); else localStorage.removeItem(STORAGE_KEYS[type]); if (type === "conversations" || type === "all") localStorage.removeItem(STORAGE_KEYS.activeId); currentConversation = null; responseEl.innerHTML = ""; if (type === "all") { localStorage.removeItem("studyai-theme"); applyTheme("light"); localStorage.setItem("studyai-theme", "light"); updateGreeting(); renderProfile(); } renderDashboard(); renderSettings(); }));
-document.querySelectorAll("[data-dashboard-action='chat']").forEach(btn => btn.addEventListener("click", () => { setActiveNav(document.querySelector('[data-view="dashboard"]')); showView("chat"); messageInput.focus(); }));
+function renderStudyOverview() {
+    const tasks = loadTasks();
+    const completedTasks = tasks.filter((t) => t.completed).length;
+    const totalTasks = tasks.length;
+    const progressPercent = totalTasks ? Math.round((completedTasks / totalTasks) * 100) : 0;
+    const streak = computeStreak();
+
+    overviewProgressValue.textContent = totalTasks ? `${progressPercent}%` : "No tasks yet";
+    overviewStreakValue.textContent = `${streak} day${streak === 1 ? "" : "s"}`;
+    overviewCompletedValue.textContent = `${completedTasks}`;
+}
+
+function relativeTime(ts) {
+    const mins = Math.round((Date.now() - ts) / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.round(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.round(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return formatShortDate(ts);
+}
+
+function getRecentActivityItems() {
+    const items = [];
+    loadConversations().forEach((c) => {
+        if (c.messages.length) items.push({ type: "chat", label: c.title || "Untitled conversation", time: c.updatedAt, id: c.id });
+    });
+    loadNotes().forEach((n) => items.push({ type: "note", label: n.title, time: n.updatedAt || n.createdAt }));
+    loadBookmarks().forEach((b) => items.push({ type: "bookmark", label: b.question || "Saved response", time: b.createdAt }));
+    loadTasks().filter((t) => t.completed).forEach((t) => items.push({ type: "task", label: t.name, time: t.completedAt || t.createdAt }));
+    return items.sort((a, b) => b.time - a.time).slice(0, 5);
+}
+
+function renderRecentActivity() {
+    const items = getRecentActivityItems();
+    if (!items.length) {
+        recentActivityList.innerHTML = "";
+        recentActivityEmpty.hidden = false;
+        return;
+    }
+    recentActivityEmpty.hidden = true;
+    recentActivityList.innerHTML = items.map((item, idx) => `
+        <button class="activity-item" data-index="${idx}">
+            <span class="activity-icon"><i class="fa-solid ${ACTIVITY_ICONS[item.type]}"></i></span>
+            <span class="activity-main">
+                <span class="activity-label">${escapeHtml(item.label)}</span>
+                <span class="activity-time">${relativeTime(item.time)}</span>
+            </span>
+        </button>
+    `).join("");
+
+    recentActivityList.querySelectorAll(".activity-item").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            const item = items[parseInt(btn.dataset.index, 10)];
+            if (item.type === "chat") { openConversation(item.id); }
+            else if (item.type === "note") { handleNavClick("notes", document.querySelector('.nav-item[data-view="notes"]')); }
+            else if (item.type === "bookmark") { handleNavClick("bookmarks", document.querySelector('.nav-item[data-view="bookmarks"]')); }
+            else if (item.type === "task") {
+                handleNavClick("planner", document.querySelector('.nav-item[data-view="planner"]'));
+                switchPlannerTab("completed");
+            }
+        });
+    });
+}
+
+function renderContinueStudying() {
+    const conversations = loadConversations().filter((c) => c.messages.length);
+    if (conversations.length) {
+        const latest = conversations.sort((a, b) => b.updatedAt - a.updatedAt)[0];
+        continueStudyingCard.hidden = false;
+        continueStudyingEmpty.hidden = true;
+        continueTitle.textContent = latest.title || "Untitled conversation";
+        continueMeta.textContent = `${latest.messages.length} message${latest.messages.length === 1 ? "" : "s"} \u00B7 ${formatShortDate(latest.updatedAt)}`;
+        continueBtn.onclick = () => openConversation(latest.id);
+        return;
+    }
+
+    const upcoming = loadTasks().filter((t) => !t.completed && t.date).sort((a, b) => a.date.localeCompare(b.date));
+    if (upcoming.length) {
+        const next = upcoming[0];
+        continueStudyingCard.hidden = false;
+        continueStudyingEmpty.hidden = true;
+        continueTitle.textContent = next.name;
+        continueMeta.textContent = `${next.subject ? next.subject + " \u00B7 " : ""}${formatTaskDate(next.date)}`;
+        continueBtn.onclick = () => handleNavClick("planner", document.querySelector('.nav-item[data-view="planner"]'));
+        return;
+    }
+
+    continueStudyingCard.hidden = true;
+    continueStudyingEmpty.hidden = false;
+}
+
+function renderDashboardOverview() {
+    renderStudyOverview();
+    renderRecentActivity();
+    renderContinueStudying();
+}
 
 // ---------------------------------------------------------
-// 23. Initial state: restore the last active conversation if
+// 23. Profile — single source of truth for the user's info,
+//     read by the Profile page, the sidebar, and the greeting
+// ---------------------------------------------------------
+const DEFAULT_PROFILE = { name: "", studentId: "", university: "", program: "", year: "", subjects: "", preferences: "" };
+
+function loadProfile() { return loadObject(STORAGE_KEYS.profile, DEFAULT_PROFILE); }
+function saveProfileData(profile) { return saveObject(STORAGE_KEYS.profile, profile); }
+
+// Pushes the saved profile out to every place it's displayed:
+// the topbar/dashboard greeting and the sidebar user card.
+function applyProfileToUI(profile) {
+    const trimmedName = (profile.name || "").trim();
+    profileFirstName = trimmedName ? trimmedName.split(" ")[0] : "";
+    updateGreeting();
+
+    if (trimmedName) {
+        sidebarUserName.textContent = trimmedName;
+        sidebarUserSub.textContent = profile.program || profile.university || "Student";
+    } else {
+        sidebarUserName.textContent = "Set up your profile";
+        sidebarUserSub.textContent = "Tap to add your info";
+    }
+}
+
+const profileDisplay = document.getElementById("profileDisplay");
+const profileForm = document.getElementById("profileForm");
+const profileDisplayName = document.getElementById("profileDisplayName");
+const profileDisplaySub = document.getElementById("profileDisplaySub");
+const profileDisplayStudentId = document.getElementById("profileDisplayStudentId");
+const profileDisplayProgram = document.getElementById("profileDisplayProgram");
+const profileDisplayUniversity = document.getElementById("profileDisplayUniversity");
+const profileDisplayYear = document.getElementById("profileDisplayYear");
+const profileDisplaySubjects = document.getElementById("profileDisplaySubjects");
+const profileDisplayPreferences = document.getElementById("profileDisplayPreferences");
+
+const editProfileBtn = document.getElementById("editProfileBtn");
+const cancelProfileBtn = document.getElementById("cancelProfileBtn");
+const profileNameInput = document.getElementById("profileNameInput");
+const profileStudentIdInput = document.getElementById("profileStudentIdInput");
+const profileProgramInput = document.getElementById("profileProgramInput");
+const profileUniversityInput = document.getElementById("profileUniversityInput");
+const profileYearInput = document.getElementById("profileYearInput");
+const profileSubjectsInput = document.getElementById("profileSubjectsInput");
+const profilePreferencesInput = document.getElementById("profilePreferencesInput");
+const profileError = document.getElementById("profileError");
+
+// Always reads fresh from storage, so returning to Profile (or
+// opening it for the first time) never shows stale/default data.
+function renderProfileDisplay() {
+    const profile = loadProfile();
+    const trimmedName = (profile.name || "").trim();
+
+    profileDisplayName.textContent = trimmedName || "Your name";
+    profileDisplaySub.textContent = profile.program || profile.university || "Add your program and university";
+
+    profileDisplayStudentId.textContent = profile.studentId || "\u2014";
+    profileDisplayProgram.textContent = profile.program || "\u2014";
+    profileDisplayUniversity.textContent = profile.university || "\u2014";
+    profileDisplayYear.textContent = profile.year || "\u2014";
+    profileDisplaySubjects.textContent = profile.subjects || "\u2014";
+    profileDisplayPreferences.textContent = profile.preferences || "\u2014";
+}
+
+editProfileBtn.addEventListener("click", () => {
+    const profile = loadProfile();
+    profileNameInput.value = profile.name || "";
+    profileStudentIdInput.value = profile.studentId || "";
+    profileProgramInput.value = profile.program || "";
+    profileUniversityInput.value = profile.university || "";
+    profileYearInput.value = profile.year || "";
+    profileSubjectsInput.value = profile.subjects || "";
+    profilePreferencesInput.value = profile.preferences || "";
+
+    profileError.hidden = true;
+    profileDisplay.hidden = true;
+    profileForm.hidden = false;
+    profileNameInput.focus();
+});
+
+cancelProfileBtn.addEventListener("click", () => {
+    profileError.hidden = true;
+    profileForm.hidden = true;
+    profileDisplay.hidden = false;
+});
+
+profileForm.addEventListener("submit", (e) => {
+    e.preventDefault();
+    profileError.hidden = true;
+
+    const name = profileNameInput.value.trim();
+    if (!name) {
+        profileError.textContent = "Please enter your name.";
+        profileError.hidden = false;
+        profileNameInput.focus();
+        return;
+    }
+
+    const profile = {
+        name,
+        studentId: profileStudentIdInput.value.trim(),
+        program: profileProgramInput.value.trim(),
+        university: profileUniversityInput.value.trim(),
+        year: profileYearInput.value.trim(),
+        subjects: profileSubjectsInput.value.trim(),
+        preferences: profilePreferencesInput.value.trim()
+    };
+
+    // Single source of truth: save once, then push the same
+    // object out to every place that displays it.
+    const saved = saveProfileData(profile);
+    if (!saved) {
+        profileError.textContent = "Couldn't save your profile. Please try again.";
+        profileError.hidden = false;
+        return; // form stays open with the entered data intact
+    }
+
+    applyProfileToUI(profile);
+    renderProfileDisplay();
+    profileForm.hidden = true;
+    profileDisplay.hidden = false;
+});
+
+// Apply whatever profile is already saved (or the empty default)
+// immediately on load, so the greeting/sidebar are correct even
+// before the user ever opens the Profile page.
+applyProfileToUI(loadProfile());
+renderProfileDisplay();
+
+// ---------------------------------------------------------
+// 24. Settings — appearance, AI preferences, data & privacy
+// ---------------------------------------------------------
+const settingsThemeSwitch = document.getElementById("settingsThemeSwitch");
+const themeSwitchBtns = settingsThemeSwitch.querySelectorAll(".planner-tab");
+const responseStyleInput = document.getElementById("responseStyleInput");
+const explanationLevelInput = document.getElementById("explanationLevelInput");
+const clearHistoryBtn = document.getElementById("clearHistoryBtn");
+const clearNotesBtn = document.getElementById("clearNotesBtn");
+const clearBookmarksBtn = document.getElementById("clearBookmarksBtn");
+const resetAppBtn = document.getElementById("resetAppBtn");
+
+function syncThemeSwitchUI() {
+    const current = document.documentElement.getAttribute("data-theme");
+    themeSwitchBtns.forEach((btn) => btn.classList.toggle("active", btn.dataset.themeChoice === current));
+}
+themeSwitchBtns.forEach((btn) => {
+    btn.addEventListener("click", () => {
+        applyTheme(btn.dataset.themeChoice);
+        localStorage.setItem("studyai-theme", btn.dataset.themeChoice);
+        syncThemeSwitchUI();
+    });
+});
+
+const DEFAULT_AI_PREFS = { responseStyle: "balanced", explanationLevel: "intermediate" };
+function loadAiPreferences() { return loadObject(STORAGE_KEYS.aiPreferences, DEFAULT_AI_PREFS); }
+function saveAiPreferences(prefs) { return saveObject(STORAGE_KEYS.aiPreferences, prefs); }
+
+function syncAiPreferencesUI() {
+    const prefs = loadAiPreferences();
+    responseStyleInput.value = prefs.responseStyle;
+    explanationLevelInput.value = prefs.explanationLevel;
+}
+responseStyleInput.addEventListener("change", () => {
+    const prefs = loadAiPreferences();
+    prefs.responseStyle = responseStyleInput.value;
+    saveAiPreferences(prefs);
+});
+explanationLevelInput.addEventListener("change", () => {
+    const prefs = loadAiPreferences();
+    prefs.explanationLevel = explanationLevelInput.value;
+    saveAiPreferences(prefs);
+});
+
+clearHistoryBtn.addEventListener("click", () => {
+    if (!confirm("Are you sure you want to delete your chat history? This action cannot be undone.")) return;
+    saveConversations([]);
+    localStorage.removeItem(STORAGE_KEYS.activeId);
+    currentConversation = null;
+    if (!historyView.hidden) renderHistory();
+    renderDashboardOverview();
+});
+
+clearNotesBtn.addEventListener("click", () => {
+    if (!confirm("Are you sure you want to delete your saved notes? This action cannot be undone.")) return;
+    saveNotes([]);
+    if (!notesView.hidden) renderNotes();
+    renderDashboardOverview();
+});
+
+clearBookmarksBtn.addEventListener("click", () => {
+    if (!confirm("Are you sure you want to delete your bookmarks? This action cannot be undone.")) return;
+    saveBookmarks([]);
+    if (!bookmarksView.hidden) renderBookmarks();
+    renderDashboardOverview();
+});
+
+resetAppBtn.addEventListener("click", () => {
+    const confirmed = confirm(
+        "Are you sure you want to reset all application data? This will permanently delete your chat history, " +
+        "notes, bookmarks, flashcard decks, quiz history, study tasks, profile, and preferences. This action cannot be undone."
+    );
+    if (!confirmed) return;
+
+    const keysToRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith("studyai-")) keysToRemove.push(key);
+    }
+    keysToRemove.forEach((key) => localStorage.removeItem(key));
+
+    currentConversation = null;
+    currentDeck = null;
+    currentQuiz = null;
+    editingNoteId = null;
+    editingTaskId = null;
+
+    applyTheme("light");
+    syncThemeSwitchUI();
+    syncAiPreferencesUI();
+    applyProfileToUI(loadProfile());
+    renderProfileDisplay();
+    renderHistory();
+    renderNotes();
+    renderBookmarks();
+    renderSavedDecks();
+    renderTasks();
+    goToDashboard();
+});
+
+syncThemeSwitchUI();
+syncAiPreferencesUI();
+
+// ---------------------------------------------------------
+// 25. Help & Support — FAQ accordion
+// ---------------------------------------------------------
+document.querySelectorAll(".faq-question").forEach((btn) => {
+    btn.addEventListener("click", () => {
+        const item = btn.closest(".faq-item");
+        item.classList.toggle("open");
+    });
+});
+
+// ---------------------------------------------------------
+// 26. Initial state: restore the last active conversation if
 //     one exists, otherwise show the welcome dashboard
 // ---------------------------------------------------------
 (function init() {
@@ -1610,9 +1993,6 @@ document.querySelectorAll("[data-dashboard-action='chat']").forEach(btn => btn.a
         renderConversation(conv);
     } else {
         showView("welcome");
-        renderDashboard();
+        renderDashboardOverview();
     }
-    updateGreeting();
-    renderProfile();
-    setProfileEditing(false);
 })();

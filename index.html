@@ -10,7 +10,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
@@ -56,6 +56,9 @@
             <button class="nav-item" data-view="planner">
                 <i class="fa-regular fa-calendar"></i><span>Study planner</span>
             </button>
+            <button class="nav-item" data-view="tools">
+                <i class="fa-solid fa-wand-magic-sparkles"></i><span>AI tools</span>
+            </button>
         </nav>
 
         <div class="side-nav side-nav-bottom">
@@ -70,8 +73,8 @@
         <button class="user-card" id="userCardBtn" data-view="profile">
             <span class="avatar avatar-sm"><i class="fa-solid fa-user"></i></span>
             <span class="user-meta">
-                <strong>Alex Morgan</strong>
-                <small>Computer Science, Yr 2</small>
+                <strong id="sidebarUserName">Alex Morgan</strong>
+                <small id="sidebarUserSub">Computer Science</small>
             </span>
         </button>
     </aside>
@@ -103,111 +106,98 @@
                 <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
                     <i class="fa-regular fa-moon"></i>
                 </button>
-                <span class="avatar avatar-sm"><i class="fa-solid fa-user"></i></span>
+                <div class="profile-menu-wrap" id="profileMenuWrap">
+                    <button type="button" class="avatar avatar-sm profile-menu-trigger" id="profileMenuTrigger"
+                            aria-haspopup="true" aria-expanded="false" aria-label="Open profile menu">
+                        <i class="fa-solid fa-user"></i>
+                    </button>
+                    <div class="profile-dropdown" id="profileDropdown" role="menu" hidden>
+                        <button type="button" class="profile-dropdown-item" data-view="profile" role="menuitem">
+                            <i class="fa-solid fa-user"></i> Profile
+                        </button>
+                        <button type="button" class="profile-dropdown-item" data-view="settings" role="menuitem">
+                            <i class="fa-solid fa-gear"></i> Settings
+                        </button>
+                    </div>
+                </div>
             </div>
         </header>
 
         <!-- ----- Workspace ----- -->
         <main class="workspace-area" id="workspaceArea">
 
-            <!-- ===== Student dashboard ===== -->
-            <section class="welcome-view dashboard-view" id="welcomeView">
-                <div class="dashboard-welcome"><h2 id="dashboardGreeting">Good morning, Alex</h2><p>What would you like to study today?</p></div>
-                <section class="quick-section"><h2>Quick actions</h2><div class="quick-grid dashboard-actions">
-                    <button class="quick-btn" data-dashboard-action="chat"><i class="fa-solid fa-comment-dots"></i><span><strong>Ask AI</strong><small>Get help with a question</small></span></button>
-                    <button class="quick-btn" data-view="quiz"><i class="fa-solid fa-list-check"></i><span><strong>Generate quiz</strong><small>Test your understanding</small></span></button>
-                    <button class="quick-btn" data-view="flashcards"><i class="fa-regular fa-clone"></i><span><strong>Flashcards</strong><small>Review key concepts</small></span></button>
-                    <button class="quick-btn" data-view="planner"><i class="fa-regular fa-calendar"></i><span><strong>Study planner</strong><small>Plan your next session</small></span></button>
-                </div></section>
-                <section class="dashboard-section"><h2>Study overview</h2><article class="overview-card">
-                    <div><p class="overview-label">Study progress</p><p class="overview-value" id="dashboardProgress">0%</p><div class="progress-track"><span id="dashboardProgressBar"></span></div></div>
-                    <div><p class="overview-label">Current streak</p><p class="overview-value" id="dashboardStreak">0 days</p></div>
-                    <div><p class="overview-label">Completed tasks</p><p class="overview-value" id="dashboardCompletedTasks">0</p></div>
-                </article></section>
-                <div class="dashboard-bottom"><section class="dashboard-section"><h2>Recent activity</h2><div class="activity-list" id="recentActivity"><p class="empty-state">No recent activity yet.</p></div></section><section class="dashboard-section continue-section"><h2>Continue studying</h2><article class="continue-card" id="continueStudy"><p class="empty-state">No unfinished study activity.</p></article></section></div>
+            <!-- ===== Welcome dashboard (shown before first message) ===== -->
+            <section class="welcome-view" id="welcomeView">
 
-                <div class="legacy-dashboard-content" hidden>
-                <div class="stat-grid">
-                    <article class="stat-card">
-                        <div class="stat-icon stat-icon-progress"><i class="fa-solid fa-chart-line"></i></div>
-                        <div>
-                            <p class="stat-label">Study progress</p>
-                            <p class="stat-value">68%</p>
-                            <p class="stat-sub">This semester</p>
-                        </div>
-                    </article>
-                    <article class="stat-card">
-                        <div class="stat-icon stat-icon-streak"><i class="fa-solid fa-fire"></i></div>
-                        <div>
-                            <p class="stat-label">Learning streak</p>
-                            <p class="stat-value">12 days</p>
-                            <p class="stat-sub">Personal best: 21</p>
-                        </div>
-                    </article>
-                    <article class="stat-card">
-                        <div class="stat-icon stat-icon-assign"><i class="fa-regular fa-calendar-check"></i></div>
-                        <div>
-                            <p class="stat-label">Upcoming assignments</p>
-                            <p class="stat-value">3 due</p>
-                            <p class="stat-sub">Next: Fri, Data Structures</p>
-                        </div>
-                    </article>
-                    <article class="stat-card">
-                        <div class="stat-icon stat-icon-recent"><i class="fa-regular fa-comments"></i></div>
-                        <div>
-                            <p class="stat-label">Recent conversations</p>
-                            <p class="stat-value">7</p>
-                            <p class="stat-sub">Last: OOP concepts</p>
-                        </div>
-                    </article>
+                <div class="welcome-strip">
+                    <h2 id="dashboardGreeting">Good morning, Alex</h2>
+                    <p class="welcome-subtitle">What would you like to study today?</p>
                 </div>
 
                 <div class="quick-section">
-                    <h2>Quick actions</h2>
-                    <div class="quick-grid">
-                        <button class="quick-btn" data-tool="explain" data-prompt="Explain this concept to me: ">
-                            <i class="fa-regular fa-lightbulb"></i><span>Explain a concept</span>
+                    <h3 class="section-heading">Quick actions</h3>
+                    <div class="action-grid">
+                        <button type="button" class="action-card" id="askAiActionBtn">
+                            <span class="action-icon"><i class="fa-solid fa-wand-magic-sparkles"></i></span>
+                            <span class="action-title">Ask AI</span>
+                            <span class="action-desc">Get instant help with any question</span>
                         </button>
-                        <button class="quick-btn" data-tool="debug" data-prompt="Can you help debug this code?
-
-">
-                            <i class="fa-solid fa-bug"></i><span>Debug code</span>
+                        <button type="button" class="action-card" data-view="quiz">
+                            <span class="action-icon"><i class="fa-solid fa-list-check"></i></span>
+                            <span class="action-title">Generate Quiz</span>
+                            <span class="action-desc">Test yourself on any topic</span>
                         </button>
-                        <button class="quick-btn" data-prompt="Summarize these notes: ">
-                            <i class="fa-regular fa-file-lines"></i><span>Summarize notes</span>
+                        <button type="button" class="action-card" data-view="flashcards">
+                            <span class="action-icon"><i class="fa-regular fa-clone"></i></span>
+                            <span class="action-title">Flashcards</span>
+                            <span class="action-desc">Review key concepts quickly</span>
                         </button>
-                        <button class="quick-btn" data-view="quiz" data-prompt="Generate a quiz about: ">
-                            <i class="fa-solid fa-list-check"></i><span>Generate quiz</span>
-                        </button>
-                        <button class="quick-btn" data-view="flashcards" data-prompt="Create flashcards for: ">
-                            <i class="fa-regular fa-clone"></i><span>Create flashcards</span>
-                        </button>
-                        <button class="quick-btn" data-prompt="I'd like to upload a PDF of my study material.">
-                            <i class="fa-solid fa-file-arrow-up"></i><span>Upload PDF</span>
+                        <button type="button" class="action-card" data-view="planner">
+                            <span class="action-icon"><i class="fa-regular fa-calendar"></i></span>
+                            <span class="action-title">Study Planner</span>
+                            <span class="action-desc">Plan and track your study tasks</span>
                         </button>
                     </div>
                 </div>
 
-                <div class="feature-section">
-                    <h2>Explore what I can do</h2>
-                    <div class="feature-grid">
-                        <button class="feature-card" data-tool="explain" data-prompt="Explain this concept to me: "><i class="fa-regular fa-lightbulb"></i><span>Explain concepts</span></button>
-                        <button class="feature-card" data-prompt="Help me solve this programming problem: "><i class="fa-solid fa-code"></i><span>Solve programming problems</span></button>
-                        <button class="feature-card" data-tool="debug" data-prompt="Can you help debug this code?
-
-"><i class="fa-solid fa-bug"></i><span>Debug code</span></button>
-                        <button class="feature-card" data-prompt="Summarize this PDF: "><i class="fa-regular fa-file-pdf"></i><span>Summarize PDFs</span></button>
-                        <button class="feature-card" data-view="flashcards" data-prompt="Create flashcards for: "><i class="fa-regular fa-clone"></i><span>Create flashcards</span></button>
-                        <button class="feature-card" data-view="quiz" data-prompt="Generate multiple-choice questions about: "><i class="fa-solid fa-list-check"></i><span>Generate MCQs</span></button>
-                        <button class="feature-card" data-view="planner" data-prompt="Help me build a study plan for: "><i class="fa-regular fa-calendar"></i><span>Study planner</span></button>
-                        <button class="feature-card" data-prompt="Help me build a mind map for: "><i class="fa-solid fa-diagram-project"></i><span>Mind maps</span></button>
-                        <button class="feature-card" data-tool="assignment" data-prompt="Help me with this assignment: "><i class="fa-solid fa-graduation-cap"></i><span>Assignment helper</span></button>
-                        <button class="feature-card" data-prompt="Help me practice my English. Let's talk about: "><i class="fa-solid fa-language"></i><span>English practice</span></button>
-                        <button class="feature-card" data-tool="math" data-prompt="Help me solve this math problem: "><i class="fa-solid fa-square-root-variable"></i><span>Mathematics solver</span></button>
-                        <button class="feature-card" data-prompt="Suggest a git commit message for these changes: "><i class="fa-brands fa-git-alt"></i><span>Git commit suggestions</span></button>
-                        <button class="feature-card" data-prompt="Write a README for this project: "><i class="fa-regular fa-file-code"></i><span>README generator</span></button>
+                <div class="overview-section">
+                    <h3 class="section-heading">Study overview</h3>
+                    <div class="overview-card">
+                        <div class="overview-item">
+                            <span class="overview-label">Study progress</span>
+                            <span class="overview-value" id="overviewProgressValue">0%</span>
+                        </div>
+                        <div class="overview-divider"></div>
+                        <div class="overview-item">
+                            <span class="overview-label">Current streak</span>
+                            <span class="overview-value" id="overviewStreakValue">0 days</span>
+                        </div>
+                        <div class="overview-divider"></div>
+                        <div class="overview-item">
+                            <span class="overview-label">Completed tasks</span>
+                            <span class="overview-value" id="overviewCompletedValue">0</span>
+                        </div>
                     </div>
                 </div>
+
+                <div class="dashboard-columns">
+                    <div class="continue-section">
+                        <h3 class="section-heading">Continue studying</h3>
+                        <div class="continue-card" id="continueStudyingCard" hidden>
+                            <div class="continue-card-main">
+                                <p class="continue-title" id="continueTitle"></p>
+                                <p class="continue-meta" id="continueMeta"></p>
+                            </div>
+                            <button type="button" class="primary-btn" id="continueBtn">Continue</button>
+                        </div>
+                        <p class="empty-state" id="continueStudyingEmpty">Nothing in progress yet — start a chat or add a study task.</p>
+                    </div>
+
+                    <div class="activity-section">
+                        <h3 class="section-heading">Recent activity</h3>
+                        <div class="panel-list" id="recentActivityList"></div>
+                        <p class="empty-state" id="recentActivityEmpty" hidden>No recent activity yet.</p>
+                    </div>
                 </div>
             </section>
 
@@ -522,24 +512,6 @@
                 <p class="empty-state" id="taskEmpty" hidden>No upcoming tasks — generate a plan above or add one manually.</p>
             </section>
 
-            <!-- ===== Profile panel ===== -->
-            <section class="panel-view profile-view" id="profileView" hidden>
-                <div class="panel-header"><div><h2>Profile</h2><p class="panel-sub">Manage the study information and preferences used in your workspace.</p></div><button class="primary-btn" id="editProfileBtn"><i class="fa-solid fa-pen"></i> Edit profile</button></div>
-                <form id="profileForm"><div class="profile-card"><div class="profile-avatar" id="profileAvatar">A</div><div><h3 id="profileNameDisplay">Alex Morgan</h3><p id="profileProgramDisplay">Computer Science</p></div></div>
-                    <div class="profile-fields"><label class="field"><span>Name</span><input id="profileName" required disabled></label><label class="field"><span>Student ID</span><input id="profileStudentId" disabled></label><label class="field"><span>Program</span><input id="profileProgram" disabled></label><label class="field"><span>University</span><input id="profileUniversity" disabled></label><label class="field"><span>Preferred subjects</span><input id="profileSubjects" placeholder="e.g. Computer Science, Mathematics" disabled></label><label class="field"><span>Learning preferences</span><select id="profileLearningPreference" disabled><option value="Visual learner">Visual learner</option><option value="Practice-based">Practice-based</option><option value="Reading and writing">Reading and writing</option><option value="Discussion-based">Discussion-based</option></select></label></div>
-                    <div class="note-form-actions" id="profileActions" hidden><button type="button" class="ghost-btn" id="cancelProfileBtn">Cancel</button><button type="submit" class="primary-btn">Save changes</button></div>
-                </form>
-            </section>
-
-            <!-- ===== Settings panel ===== -->
-            <section class="panel-view settings-view" id="settingsView" hidden>
-                <div class="panel-header"><div><h2>Settings</h2><p class="panel-sub">Control how your study workspace looks and responds.</p></div></div>
-                <section class="settings-card"><h3>Appearance</h3><p>Choose the theme that is most comfortable for studying.</p><div class="theme-options"><button type="button" class="theme-choice" data-theme-choice="light"><i class="fa-regular fa-sun"></i> Light mode</button><button type="button" class="theme-choice" data-theme-choice="dark"><i class="fa-regular fa-moon"></i> Dark mode</button></div></section>
-                <section class="settings-card"><h3>AI preferences</h3><p>These preferences are included with new AI chat requests.</p><div class="profile-fields"><label class="field"><span>Response style</span><select id="responseStyle"><option value="concise">Concise</option><option value="balanced">Balanced</option><option value="detailed">Detailed</option></select></label><label class="field"><span>Explanation level</span><select id="explanationLevel"><option value="beginner">Beginner</option><option value="intermediate">Intermediate</option><option value="advanced">Advanced</option></select></label></div></section>
-                <section class="settings-card danger-zone"><h3>Data &amp; privacy</h3><p>Data is stored locally in this browser. Clearing data cannot be undone.</p><div class="data-actions"><button type="button" class="ghost-btn" data-clear="conversations">Clear chat history</button><button type="button" class="ghost-btn" data-clear="notes">Clear saved notes</button><button type="button" class="ghost-btn" data-clear="bookmarks">Clear bookmarks</button><button type="button" class="danger-btn" data-clear="all">Reset application data</button></div></section>
-                <section class="settings-card about-card"><h3>About</h3><p><strong>AI Study Assistant</strong><br>A student-focused AI platform designed to help with learning, programming, revision, and study planning.</p><small>Version 1.0.0 · Flask · JavaScript · Google Gemini</small></section>
-            </section>
-
             <!-- ===== AI Study Tools panel ===== -->
             <section class="panel-view" id="toolsView" hidden>
                 <div class="panel-header">
@@ -634,6 +606,189 @@
                     </form>
                     <p class="flashcard-error" id="assignmentError" hidden></p>
                     <div class="tool-result" id="assignmentResult" hidden></div>
+                </div>
+            </section>
+
+            <!-- ===== Profile panel ===== -->
+            <section class="panel-view" id="profileView" hidden>
+                <div class="panel-header">
+                    <div>
+                        <h2>Profile</h2>
+                        <p class="panel-sub">Manage your basic information and study preferences.</p>
+                    </div>
+                </div>
+
+                <div class="profile-card" id="profileDisplay">
+                    <div class="profile-card-top">
+                        <span class="avatar profile-avatar"><i class="fa-solid fa-user"></i></span>
+                        <div class="profile-identity">
+                            <p class="profile-name" id="profileDisplayName">Your name</p>
+                            <p class="profile-sub" id="profileDisplaySub">Add your program and university</p>
+                        </div>
+                        <button type="button" class="ghost-btn" id="editProfileBtn"><i class="fa-solid fa-pen"></i> Edit profile</button>
+                    </div>
+                    <div class="profile-fields">
+                        <div class="profile-field"><span>Student ID</span><p id="profileDisplayStudentId">—</p></div>
+                        <div class="profile-field"><span>Program</span><p id="profileDisplayProgram">—</p></div>
+                        <div class="profile-field"><span>University</span><p id="profileDisplayUniversity">—</p></div>
+                        <div class="profile-field"><span>Year / Semester</span><p id="profileDisplayYear">—</p></div>
+                        <div class="profile-field"><span>Preferred subjects</span><p id="profileDisplaySubjects">—</p></div>
+                        <div class="profile-field"><span>Learning preferences</span><p id="profileDisplayPreferences">—</p></div>
+                    </div>
+                </div>
+
+                <form class="profile-card" id="profileForm" hidden>
+                    <div class="flashcard-form-row">
+                        <label class="field"><span>Name</span><input type="text" id="profileNameInput" placeholder="Your name"></label>
+                        <label class="field"><span>Student ID</span><input type="text" id="profileStudentIdInput" placeholder="e.g. 20231234"></label>
+                    </div>
+                    <div class="flashcard-form-row">
+                        <label class="field"><span>Program</span><input type="text" id="profileProgramInput" placeholder="e.g. Computer Science"></label>
+                        <label class="field"><span>University</span><input type="text" id="profileUniversityInput" placeholder="e.g. State University"></label>
+                    </div>
+                    <div class="flashcard-form-row">
+                        <label class="field field-narrow"><span>Year / Semester</span><input type="text" id="profileYearInput" placeholder="e.g. 1st Year"></label>
+                        <label class="field"><span>Preferred subjects</span><input type="text" id="profileSubjectsInput" placeholder="e.g. Computer Science, Mathematics"></label>
+                    </div>
+                    <label class="field"><span>Learning preferences</span><textarea id="profilePreferencesInput" rows="3" placeholder="e.g. Prefers visual examples and step-by-step explanations"></textarea></label>
+                    <p class="flashcard-error" id="profileError" hidden></p>
+                    <div class="note-form-actions">
+                        <button type="button" class="ghost-btn" id="cancelProfileBtn">Cancel</button>
+                        <button type="submit" class="primary-btn" id="saveProfileBtn">Save changes</button>
+                    </div>
+                </form>
+            </section>
+
+            <!-- ===== Settings panel ===== -->
+            <section class="panel-view" id="settingsView" hidden>
+                <div class="panel-header">
+                    <div>
+                        <h2>Settings</h2>
+                        <p class="panel-sub">Control how the app looks and behaves.</p>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Appearance</h3>
+                    <div class="settings-row">
+                        <p class="settings-row-label">Theme</p>
+                        <div class="theme-switch" id="settingsThemeSwitch">
+                            <button type="button" class="planner-tab" data-theme-choice="light"><i class="fa-regular fa-sun"></i> Light</button>
+                            <button type="button" class="planner-tab" data-theme-choice="dark"><i class="fa-regular fa-moon"></i> Dark</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>AI preferences</h3>
+                    <div class="settings-row">
+                        <label class="settings-row-label" for="responseStyleInput">Response style</label>
+                        <select id="responseStyleInput" class="settings-select">
+                            <option value="concise">Concise</option>
+                            <option value="balanced">Balanced</option>
+                            <option value="detailed">Detailed</option>
+                        </select>
+                    </div>
+                    <div class="settings-row">
+                        <label class="settings-row-label" for="explanationLevelInput">Explanation level</label>
+                        <select id="explanationLevelInput" class="settings-select">
+                            <option value="beginner">Beginner</option>
+                            <option value="intermediate">Intermediate</option>
+                            <option value="advanced">Advanced</option>
+                        </select>
+                    </div>
+                    <p class="settings-hint">Applied to your conversations in AI Chat.</p>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Data &amp; privacy</h3>
+                    <div class="settings-actions">
+                        <button type="button" class="ghost-btn danger-btn" id="clearHistoryBtn"><i class="fa-solid fa-trash"></i> Clear chat history</button>
+                        <button type="button" class="ghost-btn danger-btn" id="clearNotesBtn"><i class="fa-solid fa-trash"></i> Clear saved notes</button>
+                        <button type="button" class="ghost-btn danger-btn" id="clearBookmarksBtn"><i class="fa-solid fa-trash"></i> Clear bookmarks</button>
+                        <button type="button" class="ghost-btn danger-btn" id="resetAppBtn"><i class="fa-solid fa-triangle-exclamation"></i> Reset application data</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>About</h3>
+                    <p class="settings-about-title">AI Study Assistant</p>
+                    <p class="settings-about-desc">A student-focused AI platform designed to help with learning, programming, revision, and study planning.</p>
+                    <p class="settings-about-meta">Version 1.0.0 &middot; Built with Flask, the Google GenAI SDK, and the Gemini API.</p>
+                </div>
+            </section>
+
+            <!-- ===== Help & Support panel ===== -->
+            <section class="panel-view" id="helpView" hidden>
+                <div class="panel-header">
+                    <div>
+                        <h2>Help &amp; support</h2>
+                        <p class="panel-sub">Answers to common questions about using StudyAI.</p>
+                    </div>
+                </div>
+
+                <div class="faq-list" id="faqList">
+                    <div class="faq-item">
+                        <button type="button" class="faq-question">
+                            <span>How do I use the AI Assistant?</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer"><p>Type a question into the message box at the bottom of the screen and press Enter or tap send. Your conversation is saved automatically under Chat history.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button type="button" class="faq-question">
+                            <span>How do I save a note?</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer"><p>Tap the note icon on any AI response to save it, or open Saved Notes from the sidebar and write one directly.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button type="button" class="faq-question">
+                            <span>How do I use the Study Planner?</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer"><p>Open Study Planner from the sidebar. Generate a plan with AI by describing what you need to study, or add tasks manually, then check them off as you complete them.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button type="button" class="faq-question">
+                            <span>How do I generate a quiz?</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer"><p>Open Quiz generator from the sidebar, enter a topic and your preferred settings, then click Generate quiz.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button type="button" class="faq-question">
+                            <span>How do I create flashcards?</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer"><p>Open Flashcards from the sidebar, enter a topic, and click Generate flashcards. Use Save deck to keep any set you want to study again later.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button type="button" class="faq-question">
+                            <span>Where can I find my chat history?</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer"><p>Open Chat history from the sidebar — every conversation is saved automatically as you chat, and survives a page refresh.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button type="button" class="faq-question">
+                            <span>How do I change my profile?</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer"><p>Open Profile from the sidebar or the profile icon in the top-right corner, click Edit profile, make your changes, then click Save changes.</p></div>
+                    </div>
+                    <div class="faq-item">
+                        <button type="button" class="faq-question">
+                            <span>How do I change application settings?</span>
+                            <i class="fa-solid fa-chevron-down"></i>
+                        </button>
+                        <div class="faq-answer"><p>Open Settings from the sidebar to switch between light and dark mode, adjust AI response preferences, or clear stored data.</p></div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Contact &amp; feedback</h3>
+                    <p class="settings-about-desc">This is a local student project without a live support inbox yet. In the meantime, use the thumbs up / down icons on any AI response to flag feedback, or jot down issues in a Saved Note.</p>
                 </div>
             </section>
 

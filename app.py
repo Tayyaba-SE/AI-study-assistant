@@ -76,21 +76,32 @@ def chat():
 
     # Get the "message" field the front-end sent us
     question = data.get("message", "")
-    preferences = data.get("preferences", {})
 
     # If no message was provided, return a 400 Bad Request
     if not question:
         return jsonify({"reply": "Please provide a message."}), 400
 
+    # Optional AI preferences from Settings — used to steer the
+    # answer, but never shown back to the user as part of the reply.
+    response_style = str(data.get("responseStyle", "")).strip().lower()
+    explanation_level = str(data.get("explanationLevel", "")).strip().lower()
+
+    style_map = {
+        "concise": "Keep your answer brief and to the point.",
+        "balanced": "Give a reasonably thorough answer without being overly long.",
+        "detailed": "Give a thorough, detailed answer with explanations."
+    }
+    level_map = {
+        "beginner": "Explain as if to someone new to the subject, avoiding jargon.",
+        "intermediate": "Explain at a level appropriate for a university student with some background.",
+        "advanced": "Explain at an advanced level, assuming strong prior knowledge."
+    }
+
+    guidance = " ".join(filter(None, [style_map.get(response_style), level_map.get(explanation_level)]))
+    prompt = f"{question}\n\n(Response guidance: {guidance})" if guidance else question
+
     try:
         # Send the user's question to the Gemini model
-        response_style = str(preferences.get("responseStyle", "balanced")).lower() if isinstance(preferences, dict) else "balanced"
-        explanation_level = str(preferences.get("explanationLevel", "intermediate")).lower() if isinstance(preferences, dict) else "intermediate"
-        if response_style not in ("concise", "balanced", "detailed"):
-            response_style = "balanced"
-        if explanation_level not in ("beginner", "intermediate", "advanced"):
-            explanation_level = "intermediate"
-        prompt = f"""You are a helpful AI study assistant. Answer the student's question using a {response_style} response style and an {explanation_level} explanation level.\n\nQuestion: {question}"""
         response = client.models.generate_content(
             model=MODEL,
             contents=prompt
