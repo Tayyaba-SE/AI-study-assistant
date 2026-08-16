@@ -45,6 +45,12 @@ const sidebarUserSub = document.getElementById("sidebarUserSub");
 const profileMenuTrigger = document.getElementById("profileMenuTrigger");
 const profileDropdown = document.getElementById("profileDropdown");
 
+const notifMenuTrigger = document.getElementById("notifMenuTrigger");
+const notifDropdown = document.getElementById("notifDropdown");
+const notifDot = document.getElementById("notifDot");
+const notifList = document.getElementById("notifList");
+const notifEmpty = document.getElementById("notifEmpty");
+
 const historyList = document.getElementById("historyList");
 const historyEmpty = document.getElementById("historyEmpty");
 
@@ -316,6 +322,7 @@ function closeProfileDropdown() {
     profileMenuTrigger.setAttribute("aria-expanded", "false");
 }
 function openProfileDropdown() {
+    closeNotifDropdown();
     profileDropdown.hidden = false;
     profileMenuTrigger.setAttribute("aria-expanded", "true");
 }
@@ -330,13 +337,92 @@ profileDropdown.querySelectorAll(".profile-dropdown-item").forEach((item) => {
         handleNavClick(view, document.querySelector(`.nav-item[data-view="${view}"]`));
     });
 });
+
+// ----- Notifications: real reminders derived from Study Planner tasks -----
+const NOTIF_STATUS_META = {
+    overdue: { label: "Overdue", icon: "fa-triangle-exclamation" },
+    today: { label: "Due today", icon: "fa-calendar-day" },
+    tomorrow: { label: "Due tomorrow", icon: "fa-calendar" }
+};
+
+function getTaskNotifications() {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const notifications = [];
+    loadTasks().filter((t) => !t.completed && t.date).forEach((t) => {
+        const taskDate = new Date(`${t.date}T00:00:00`);
+        if (Number.isNaN(taskDate.getTime())) return;
+
+        let status = null;
+        if (taskDate.getTime() === today.getTime()) status = "today";
+        else if (taskDate.getTime() === tomorrow.getTime()) status = "tomorrow";
+        else if (taskDate.getTime() < today.getTime()) status = "overdue";
+
+        if (status) notifications.push({ task: t, status });
+    });
+
+    const rank = { overdue: 0, today: 1, tomorrow: 2 };
+    notifications.sort((a, b) => rank[a.status] - rank[b.status] || a.task.date.localeCompare(b.task.date));
+    return notifications;
+}
+
+function renderNotifications() {
+    const notifications = getTaskNotifications();
+    notifDot.hidden = notifications.length === 0;
+    notifEmpty.hidden = notifications.length !== 0;
+
+    notifList.innerHTML = notifications.map((n) => {
+        const meta = NOTIF_STATUS_META[n.status];
+        const metaLine = n.task.subject ? `${meta.label} \u00B7 ${escapeHtml(n.task.subject)}` : meta.label;
+        return `
+            <button type="button" class="notif-item notif-${n.status}">
+                <span class="notif-icon"><i class="fa-solid ${meta.icon}"></i></span>
+                <span class="notif-main">
+                    <span class="notif-label">${escapeHtml(n.task.name)}</span>
+                    <span class="notif-meta">${metaLine}</span>
+                </span>
+            </button>
+        `;
+    }).join("");
+
+    notifList.querySelectorAll(".notif-item").forEach((btn) => {
+        btn.addEventListener("click", () => {
+            closeNotifDropdown();
+            handleNavClick("planner", document.querySelector('.nav-item[data-view="planner"]'));
+        });
+    });
+}
+
+function closeNotifDropdown() {
+    notifDropdown.hidden = true;
+    notifMenuTrigger.setAttribute("aria-expanded", "false");
+}
+function openNotifDropdown() {
+    closeProfileDropdown();
+    renderNotifications();
+    notifDropdown.hidden = false;
+    notifMenuTrigger.setAttribute("aria-expanded", "true");
+}
+notifMenuTrigger.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (notifDropdown.hidden) openNotifDropdown(); else closeNotifDropdown();
+});
+
 document.addEventListener("click", (e) => {
     if (!profileDropdown.hidden && !profileMenuTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
         closeProfileDropdown();
     }
+    if (!notifDropdown.hidden && !notifMenuTrigger.contains(e.target) && !notifDropdown.contains(e.target)) {
+        closeNotifDropdown();
+    }
 });
 document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && !profileDropdown.hidden) closeProfileDropdown();
+    if (e.key !== "Escape") return;
+    if (!profileDropdown.hidden) closeProfileDropdown();
+    if (!notifDropdown.hidden) closeNotifDropdown();
 });
 
 // ---------------------------------------------------------
@@ -1205,6 +1291,10 @@ function renderTasks() {
     taskList.querySelectorAll(".delete-task").forEach((btn) => {
         btn.addEventListener("click", () => deleteTask(btn.dataset.id));
     });
+
+    // Task dates/completion just changed — keep the notification bell in sync
+    notifDot.hidden = getTaskNotifications().length === 0;
+    if (!notifDropdown.hidden) renderNotifications();
 }
 
 function toggleTaskComplete(id, completed) {

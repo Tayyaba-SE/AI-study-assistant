@@ -99,10 +99,18 @@
             </label>
 
             <div class="topbar-actions">
-                <button class="icon-btn" aria-label="Notifications">
-                    <i class="fa-regular fa-bell"></i>
-                    <span class="dot"></span>
-                </button>
+                <div class="notif-menu-wrap" id="notifMenuWrap">
+                    <button type="button" class="icon-btn notif-menu-trigger" id="notifMenuTrigger"
+                            aria-haspopup="true" aria-expanded="false" aria-label="Notifications">
+                        <i class="fa-regular fa-bell"></i>
+                        <span class="dot" id="notifDot" hidden></span>
+                    </button>
+                    <div class="notif-dropdown" id="notifDropdown" role="menu" hidden>
+                        <p class="notif-dropdown-header">Notifications</p>
+                        <div class="notif-list" id="notifList"></div>
+                        <p class="empty-state notif-empty" id="notifEmpty">You're all caught up.</p>
+                    </div>
+                </div>
                 <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Toggle dark mode">
                     <i class="fa-regular fa-moon"></i>
                 </button>
